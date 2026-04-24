@@ -1,0 +1,48 @@
+# Claude Code worktrees — never commit these
+.claude/worktrees/
+.claude/settings.local.json
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+*.so
+.venv/
+venv/
+env/
+
+# uv
+.uv/
+uv.lock
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Data / model artifacts
+data/
+models/
+*.parquet
+*.csv
+*.pkl
+*.pickle
+
+# Logs
+logs/
+*.log
+
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.swp
