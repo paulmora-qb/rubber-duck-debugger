@@ -16,14 +16,44 @@ class OHLCVSchema(DataFrameModel):
     are unadjusted raw prices from yfinance with auto_adjust=False).
     """
 
-    ticker: Series[str] = pa.Field(nullable=False)
-    date: Series[pd.Timestamp] = pa.Field(nullable=False)
-    open: Series[float] = pa.Field(nullable=True, ge=0)
-    high: Series[float] = pa.Field(nullable=True, ge=0)
-    low: Series[float] = pa.Field(nullable=True, ge=0)
-    close: Series[float] = pa.Field(nullable=True, ge=0)
-    adj_close: Series[float] = pa.Field(nullable=True, ge=0)
-    volume: Series[float] = pa.Field(nullable=True, ge=0)
+    ticker: Series[str] = pa.Field(
+        nullable=False,
+        description="Exchange-listed ticker symbol in yfinance format (e.g. 'AAPL', 'BRK-B').",
+    )
+    date: Series[pd.Timestamp] = pa.Field(
+        nullable=False,
+        description="Trading day as a timezone-naive timestamp (one row per trading day per ticker).",
+    )
+    open: Series[float] = pa.Field(
+        nullable=True,
+        ge=0,
+        description="Unadjusted opening price for the session.",
+    )
+    high: Series[float] = pa.Field(
+        nullable=True,
+        ge=0,
+        description="Unadjusted intraday high price.",
+    )
+    low: Series[float] = pa.Field(
+        nullable=True,
+        ge=0,
+        description="Unadjusted intraday low price.",
+    )
+    close: Series[float] = pa.Field(
+        nullable=True,
+        ge=0,
+        description="Unadjusted closing price.",
+    )
+    adj_close: Series[float] = pa.Field(
+        nullable=True,
+        ge=0,
+        description="Split-and-dividend-adjusted closing price.",
+    )
+    volume: Series[float] = pa.Field(
+        nullable=True,
+        ge=0,
+        description="Number of shares traded during the session.",
+    )
 
     class Config:
         """Pandera config."""
