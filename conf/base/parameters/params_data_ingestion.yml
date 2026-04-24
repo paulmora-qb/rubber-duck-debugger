@@ -1,0 +1,7 @@
+data_ingestion:
+  start_date: "2023-01-01"
+  batch_size: 100  # tickers per yfinance download call
+  index_sources:
+    sp500: true
+    nasdaq100: true
+    russell2000: false  # IWM source is fragile — enable manually once verified

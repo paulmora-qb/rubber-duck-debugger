@@ -26,7 +26,10 @@ env/
 .env.*
 !.env.example
 
-# Data / model artifacts
+# Kedro local config — may contain machine-specific paths
+conf/local/
+
+# Data / model artifacts — never commit raw data
 data/
 models/
 *.parquet
