@@ -13,6 +13,9 @@ dependencies = [
     "yfinance>=0.2",
     "finnhub-python>=2.4",
     "newsapi-python>=0.2",
+    "kedro~=1.2",
+    "kedro-datasets[pandas-parquetdataset]>=9.2",
+    "pandera>=0.21",
 ]
 
 [tool.uv]
@@ -26,6 +29,12 @@ dev = [
     { include-group = "lint" },
     { include-group = "test" },
 ]
+
+[tool.kedro]
+package_name = "rdd"
+project_name = "Rubber Duck Debugger"
+kedro_init_version = "1.0.0"
+source_dir = "src"
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -101,3 +110,6 @@ max-line-length = 88
 
 [tool.ruff.lint.mccabe]
 max-complexity = 10
+
+[tool.kedro_telemetry]
+project_id = "0140248258b94b2aa2454760dd7d845f"
