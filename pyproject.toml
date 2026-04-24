@@ -16,6 +16,7 @@ dependencies = [
     "kedro~=1.2",
     "kedro-datasets[pandas-parquetdataset]>=9.2",
     "pandera>=0.21",
+    "lxml>=5.0",
 ]
 
 [tool.uv]
