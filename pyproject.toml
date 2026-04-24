@@ -1,0 +1,102 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rubber-duck-debugger"
+version = "0.1.0"
+description = "Algorithmic trading research platform — stock prediction, backtesting, broker integration."
+authors = [{ name = "Paul Mora" }]
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "yfinance>=0.2",
+    "finnhub-python>=2.4",
+]
+
+[tool.uv]
+required-version = ">=0.10.0"
+default-groups = ["dev"]
+
+[dependency-groups]
+lint = ["pre-commit>=4.0", "ruff>=0.15"]
+test = ["pytest>=9.0", "pytest-cov"]
+dev = [
+    { include-group = "lint" },
+    { include-group = "test" },
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+namespaces = true
+
+[tool.pytest.ini_options]
+addopts = """
+--cov src \
+-ra \
+--strict-markers
+"""
+testpaths = ["tests"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+skip_empty = true
+
+[tool.coverage.run]
+source = ["src"]
+branch = true
+
+[tool.ruff]
+line-length = 88
+show-fixes = true
+
+[tool.ruff.format]
+docstring-code-format = true
+
+[tool.ruff.lint]
+extend-select = [
+    "ARG", # flake8-unused-arguments
+    "B",   # flake8-bugbear
+    "C4",  # Comprehensions / dict / list misuse
+    "D",   # Docstrings
+    "I",   # isort
+    "ICN", # Import conventions
+    "LOG", # flake8-logging
+    "N",   # Naming conventions
+    "PL",  # Pylint
+    "PT",  # Pytest
+    "RUF", # Ruff-specific rules
+    "S",   # flake8-bandit (security)
+    "SIM", # Simplification
+    "T20", # Discourage print statements
+    "TID", # Import practices
+    "UP",  # pyupgrade
+    "W",   # PyCodeStyle warnings
+]
+ignore = [
+    "E501",    # Line too long (handled by formatter)
+    "W505",    # Docstring line too long
+    "D101",    # Missing docstring in public class
+    "PLR0913", # Too many arguments
+    "PLR2004", # Magic values
+    "S608",    # SQL injections
+]
+fixable = ["ALL"]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+"tests/**/*" = [
+    "S101", # Allow assert in tests
+    "D1",   # Allow missing docstrings in tests
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.pycodestyle]
+max-doc-length = 88
+max-line-length = 88
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
