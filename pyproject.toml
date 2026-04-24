@@ -25,7 +25,7 @@ default-groups = ["dev"]
 
 [dependency-groups]
 lint = ["pre-commit>=4.0", "ruff>=0.15"]
-test = ["pytest>=9.0", "pytest-cov"]
+test = ["pytest>=9.0", "pytest-cov", "pytest-mock>=3.0", "pytest-socket>=0.7", "hypothesis>=6.0"]
 dev = [
     { include-group = "lint" },
     { include-group = "test" },
@@ -43,6 +43,7 @@ namespaces = true
 
 [tool.pytest.ini_options]
 addopts = """
+--disable-socket \
 --cov src \
 -ra \
 --strict-markers
