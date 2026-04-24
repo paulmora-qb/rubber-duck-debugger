@@ -6,7 +6,10 @@ import logging
 from collections.abc import Callable
 from typing import Any
 
+import io
+
 import pandas as pd
+import requests
 import yfinance as yf
 
 from rdd.schemas.ohlcv import OHLCVSchema
@@ -22,19 +25,34 @@ _IWM_HOLDINGS_URL = (
 )
 
 
+_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/124.0.0.0 Safari/537.36"
+    )
+}
+
+
 def _normalise_ticker(ticker: str) -> str:
     """Replace dots with hyphens to match yfinance conventions (BRK.B → BRK-B)."""
     return ticker.replace(".", "-")
 
 
+def _read_html_with_headers(url: str, **kwargs: Any) -> list[pd.DataFrame]:
+    """Fetch a URL with a browser User-Agent then parse HTML tables."""
+    resp = requests.get(url, headers=_HEADERS, timeout=30)
+    resp.raise_for_status()
+    return pd.read_html(io.StringIO(resp.text), **kwargs)
+
+
 def _fetch_sp500() -> list[str]:
-    tables = pd.read_html(_SP500_URL, attrs={"id": "constituents"})
+    tables = _read_html_with_headers(_SP500_URL, attrs={"id": "constituents"})
     return tables[0]["Symbol"].map(_normalise_ticker).tolist()
 
 
 def _fetch_nasdaq100() -> list[str]:
-    tables = pd.read_html(_NASDAQ100_URL)
-    # Find the table that has a "Ticker" column
+    tables = _read_html_with_headers(_NASDAQ100_URL)
     for tbl in tables:
         if "Ticker" in tbl.columns:
             return tbl["Ticker"].map(_normalise_ticker).tolist()
@@ -117,7 +135,7 @@ def _wide_to_long(raw: pd.DataFrame, tickers: list[str]) -> pd.DataFrame:
         raw.index.name = "date"
         return raw.reset_index()
 
-    raw = raw.reset_index().rename(columns={"Date": "date", "Datetime": "date"})
+    raw = raw.reset_index().rename(columns={"Date": "date", "Datetime": "date"}).copy()
     raw = raw.rename(columns={"index": "date"})
 
     rows = []
