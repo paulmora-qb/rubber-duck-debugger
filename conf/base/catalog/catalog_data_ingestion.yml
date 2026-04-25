@@ -1,0 +1,25 @@
+ticker_universe:
+  type: MemoryDataset
+
+# Read-side: existing stored data fed into the ingest node as lazy loaders.
+# Uses NullablePartitionedDataset so the first run (empty dir) returns {} gracefully.
+raw_ohlcv_existing:
+  type: rdd.datasets.nullable_partitioned.NullablePartitionedDataset
+  path: ${globals:data_dir}raw/ohlcv
+  dataset:
+    type: pandas.ParquetDataset
+  filename_suffix: ".parquet"
+  metadata:
+    kedro-viz:
+      layer: raw
+
+# Write-side: merged output saved back to the same path.
+raw_ohlcv:
+  type: kedro_datasets.partitions.PartitionedDataset
+  path: ${globals:data_dir}raw/ohlcv
+  dataset:
+    type: pandas.ParquetDataset
+  filename_suffix: ".parquet"
+  metadata:
+    kedro-viz:
+      layer: raw

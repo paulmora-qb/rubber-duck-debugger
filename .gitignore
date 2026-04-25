@@ -1,6 +1,10 @@
-# Claude Code worktrees — never commit these
+# Claude Code — never commit these
 .claude/worktrees/
 .claude/settings.local.json
+.claude/scheduled_tasks.lock
+
+# Test / coverage artefacts
+.coverage
 
 # Python
 __pycache__/
@@ -16,7 +20,6 @@ env/
 
 # uv
 .uv/
-uv.lock
 
 # Jupyter
 .ipynb_checkpoints/
@@ -27,7 +30,10 @@ uv.lock
 .env.*
 !.env.example
 
-# Data / model artifacts
+# Kedro local config — may contain machine-specific paths
+conf/local/
+
+# Data / model artifacts — never commit raw data
 data/
 models/
 *.parquet

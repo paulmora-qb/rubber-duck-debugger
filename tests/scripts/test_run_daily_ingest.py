@@ -10,6 +10,7 @@ def test_dry_run_exits_zero():
         ["/bin/bash", str(SCRIPT), "--dry-run"],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 0, result.stderr
 
@@ -19,9 +20,12 @@ def test_dry_run_contains_all_pipelines():
         ["/bin/bash", str(SCRIPT), "--dry-run"],
         capture_output=True,
         text=True,
+        check=False,
     )
     for pipeline in PIPELINES:
-        assert pipeline in result.stdout, f"Missing pipeline in dry-run output: {pipeline}"
+        assert pipeline in result.stdout, (
+            f"Missing pipeline in dry-run output: {pipeline}"
+        )
 
 
 def test_dry_run_pipeline_order():
@@ -29,6 +33,7 @@ def test_dry_run_pipeline_order():
         ["/bin/bash", str(SCRIPT), "--dry-run"],
         capture_output=True,
         text=True,
+        check=False,
     )
     positions = [result.stdout.index(p) for p in PIPELINES]
     assert positions == sorted(positions), "Pipelines not printed in expected order"
