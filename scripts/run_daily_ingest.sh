@@ -25,6 +25,8 @@ if [[ "${1:-}" == "--dry-run" ]]; then
 fi
 
 mkdir -p "$LOG_DIR"
+# OmegaConf globals resolver requires conf/local to exist even when empty.
+mkdir -p "$PROJECT_ROOT/conf/local"
 
 ts() { date -u "+%Y-%m-%dT%H:%M:%SZ"; }
 
