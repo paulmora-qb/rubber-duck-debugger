@@ -44,7 +44,9 @@ def _referenced_names() -> tuple[set[str], set[str]]:
             all_names.update(node.inputs)
             all_names.update(node.outputs)
 
-    param_names = {n.removeprefix("params:") for n in all_names if n.startswith("params:")}
+    param_names = {
+        n.removeprefix("params:") for n in all_names if n.startswith("params:")
+    }
     catalog_names = {n for n in all_names if not n.startswith("params:")}
     return catalog_names, param_names
 
