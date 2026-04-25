@@ -3,6 +3,9 @@
 from kedro.pipeline import Pipeline
 
 from rdd.pipelines.data_ingestion.pipeline import create_pipeline as data_ingestion
+from rdd.pipelines.finnhub_company_news.pipeline import (
+    create_pipeline as finnhub_company_news,
+)
 
 
 def register_pipelines() -> dict[str, Pipeline]:
@@ -10,4 +13,5 @@ def register_pipelines() -> dict[str, Pipeline]:
     return {
         "__default__": data_ingestion(),
         "data_ingestion": data_ingestion(),
+        "finnhub_company_news": finnhub_company_news(),
     }

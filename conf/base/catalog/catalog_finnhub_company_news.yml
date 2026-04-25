@@ -1,0 +1,24 @@
+ticker_universe_cn:
+  type: MemoryDataset
+
+# Read-side: existing stored articles as lazy loaders (empty dict on first run).
+raw_finnhub_company_news_existing:
+  type: rdd.datasets.nullable_partitioned.NullablePartitionedDataset
+  path: ${globals:data_dir}raw/finnhub_company_news
+  dataset:
+    type: pandas.ParquetDataset
+  filename_suffix: ".parquet"
+  metadata:
+    kedro-viz:
+      layer: raw
+
+# Write-side: merged output partitioned by ticker.
+raw_finnhub_company_news:
+  type: kedro_datasets.partitions.PartitionedDataset
+  path: ${globals:data_dir}raw/finnhub_company_news
+  dataset:
+    type: pandas.ParquetDataset
+  filename_suffix: ".parquet"
+  metadata:
+    kedro-viz:
+      layer: raw
