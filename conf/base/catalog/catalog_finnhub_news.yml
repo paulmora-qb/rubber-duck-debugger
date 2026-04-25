@@ -1,0 +1,22 @@
+# Read-side: existing stored articles fed into the node as lazy loaders.
+# NullablePartitionedDataset returns {} on first run when no partitions exist.
+raw_finnhub_market_news_existing:
+  type: rdd.datasets.nullable_partitioned.NullablePartitionedDataset
+  path: ${globals:data_dir}raw/finnhub_market_news
+  dataset:
+    type: pandas.ParquetDataset
+  filename_suffix: ".parquet"
+  metadata:
+    kedro-viz:
+      layer: raw
+
+# Write-side: merged output partitioned by date.
+raw_finnhub_market_news:
+  type: kedro_datasets.partitions.PartitionedDataset
+  path: ${globals:data_dir}raw/finnhub_market_news
+  dataset:
+    type: pandas.ParquetDataset
+  filename_suffix: ".parquet"
+  metadata:
+    kedro-viz:
+      layer: raw
