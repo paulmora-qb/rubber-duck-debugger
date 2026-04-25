@@ -111,6 +111,9 @@ fixable = ["ALL"]
     "PLR0912", # ingest_ohlcv has many branches — intentional complexity
     "PLR0915", # ingest_ohlcv has many statements — intentional complexity
 ]
+"src/rdd/pipelines/finnhub_company_news/nodes.py" = [
+    "PLR0912", # fetch_company_news has many branches — intentional complexity
+]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

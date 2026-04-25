@@ -48,7 +48,10 @@ def _make_raw_articles(
     base_date: str = "2024-01-15",
 ) -> list[dict]:
     base = pd.Timestamp(base_date)
-    return [_raw_article(base_id + i, ticker, base + pd.Timedelta(hours=i)) for i in range(n)]
+    return [
+        _raw_article(base_id + i, ticker, base + pd.Timedelta(hours=i))
+        for i in range(n)
+    ]
 
 
 # ---------------------------------------------------------------------------
@@ -61,7 +64,13 @@ class TestParseArticles:
         df = _parse_articles([], ticker="AAPL")
         assert df.empty
         assert set(df.columns) == {
-            "article_id", "ticker", "datetime", "headline", "summary", "source", "url"
+            "article_id",
+            "ticker",
+            "datetime",
+            "headline",
+            "summary",
+            "source",
+            "url",
         }
 
     def test_ticker_is_stored(self):
@@ -132,12 +141,17 @@ class TestFetchCompanyNews:
 
     @pytest.fixture
     def mock_client(self, mocker):
-        mock_cls = mocker.patch("rdd.pipelines.finnhub_company_news.nodes.finnhub.Client")
+        mock_cls = mocker.patch(
+            "rdd.pipelines.finnhub_company_news.nodes.finnhub.Client"
+        )
         return mock_cls.return_value
 
     @pytest.fixture(autouse=True)
     def set_api_key(self, mocker):
-        mocker.patch.dict(os.environ, {"FINNHUB_API_KEY": "test_key"})
+        mocker.patch.dict(
+            os.environ,
+            {"FINNHUB_API_KEY": "test_key"},  # pragma: allowlist secret
+        )
 
     def test_happy_path_writes_partition_per_ticker(self, mock_client, params):
         mock_client.company_news.return_value = _make_raw_articles(n=3, ticker="AAPL")
@@ -155,7 +169,9 @@ class TestFetchCompanyNews:
 
     def test_merges_with_existing_partition(self, mock_client, params):
         existing_df = make_company_news_df(n=2, ticker="AAPL", start_id=500)
-        mock_client.company_news.return_value = _make_raw_articles(n=2, ticker="AAPL", base_id=1000)
+        mock_client.company_news.return_value = _make_raw_articles(
+            n=2, ticker="AAPL", base_id=1000
+        )
 
         existing: dict[str, Callable[[], pd.DataFrame]] = {"aapl": lambda: existing_df}
         result = fetch_company_news(["AAPL"], existing, params)
@@ -165,7 +181,9 @@ class TestFetchCompanyNews:
 
     def test_deduplicates_by_article_id(self, mock_client, params):
         existing_df = make_company_news_df(n=2, ticker="AAPL", start_id=1000)
-        mock_client.company_news.return_value = _make_raw_articles(n=2, ticker="AAPL", base_id=1000)
+        mock_client.company_news.return_value = _make_raw_articles(
+            n=2, ticker="AAPL", base_id=1000
+        )
 
         existing: dict[str, Callable[[], pd.DataFrame]] = {"aapl": lambda: existing_df}
         result = fetch_company_news(["AAPL"], existing, params)
@@ -230,3 +248,19 @@ class TestFetchCompanyNews:
         call_kwargs = mock_client.company_news.call_args
         from_date = pd.Timestamp(call_kwargs.kwargs["_from"])
         assert from_date > pd.Timestamp("2024-01-10")
+
+    def test_dot_ticker_translated_for_finnhub_api(self, mock_client, params):
+        """BRK-B (yfinance format) must become BRK.B when calling Finnhub."""
+        mock_client.company_news.return_value = _make_raw_articles(n=2, ticker="BRK-B")
+        fetch_company_news(["BRK-B"], {}, params)
+
+        first_arg = mock_client.company_news.call_args.args[0]
+        assert first_arg == "BRK.B", f"Expected BRK.B but got {first_arg}"
+
+    def test_dot_ticker_partition_key_stays_hyphenated(self, mock_client, params):
+        """Storage partition key must use yfinance format (brk-b), not Finnhub format."""
+        mock_client.company_news.return_value = _make_raw_articles(n=2, ticker="BRK-B")
+        result = fetch_company_news(["BRK-B"], {}, params)
+
+        assert "brk-b" in result
+        assert "brk.b" not in result

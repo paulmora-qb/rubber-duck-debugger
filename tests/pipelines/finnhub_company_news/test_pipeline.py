@@ -79,7 +79,10 @@ def cn_params():
 
 @pytest.fixture(autouse=True)
 def set_api_key(mocker):
-    mocker.patch.dict(os.environ, {"FINNHUB_API_KEY": "test_key"})
+    mocker.patch.dict(
+        os.environ,
+        {"FINNHUB_API_KEY": "test_key"},  # pragma: allowlist secret
+    )
 
 
 @pytest.fixture
@@ -139,7 +142,15 @@ def test_pipeline_output_has_expected_columns(
     SequentialRunner().run(pipeline, in_memory_catalog)
 
     result = in_memory_catalog.load("raw_finnhub_company_news")
-    expected = {"article_id", "ticker", "datetime", "headline", "summary", "source", "url"}
+    expected = {
+        "article_id",
+        "ticker",
+        "datetime",
+        "headline",
+        "summary",
+        "source",
+        "url",
+    }
     for df in result.values():
         assert expected.issubset(df.columns)
         assert "image" not in df.columns

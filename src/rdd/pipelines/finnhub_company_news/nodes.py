@@ -95,6 +95,8 @@ def fetch_company_news(
 
     for i, ticker in enumerate(ticker_universe):
         partition_key = ticker.lower()
+        # Finnhub expects dot-notation (BRK.B); yfinance normalises to hyphens (BRK-B)
+        finnhub_ticker = ticker.replace("-", ".")
 
         # Determine incremental start date for this ticker
         if partition_key in existing_news:
@@ -117,12 +119,14 @@ def fetch_company_news(
 
         try:
             raw = client.company_news(
-                ticker,
+                finnhub_ticker,
                 _from=start.strftime("%Y-%m-%d"),
                 to=end_date.strftime("%Y-%m-%d"),
             )
         except Exception:
-            logger.warning("Failed to fetch news for %s — skipping.", ticker, exc_info=True)
+            logger.warning(
+                "Failed to fetch news for %s — skipping.", ticker, exc_info=True
+            )
             if i < n - 1:
                 time.sleep(sleep_seconds)
             continue
@@ -155,4 +159,4 @@ def fetch_company_news(
 
 
 # Re-export so the pipeline module can import both nodes from one place.
-__all__ = ["fetch_ticker_universe", "fetch_company_news"]
+__all__ = ["fetch_company_news", "fetch_ticker_universe"]
