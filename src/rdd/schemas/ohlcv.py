@@ -65,7 +65,9 @@ class OHLCVSchema(DataFrameModel):
     def high_gte_low(cls, df: pd.DataFrame) -> pd.Series:
         """High must be >= low wherever both are present."""
         mask = df["high"].notna() & df["low"].notna()
-        return (df.loc[mask, "high"] >= df.loc[mask, "low"]).reindex(df.index, fill_value=True)
+        return (df.loc[mask, "high"] >= df.loc[mask, "low"]).reindex(
+            df.index, fill_value=True
+        )
 
     @pa.dataframe_check
     def close_within_high_low(cls, df: pd.DataFrame) -> pd.Series:
