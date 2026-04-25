@@ -1,6 +1,8 @@
 """Kedro project settings."""
 
-HOOKS: tuple = ()
+from rdd.hooks.pandera.hook import PanderaHook
+
+HOOKS: tuple = (PanderaHook(),)
 
 CONFIG_LOADER_ARGS = {
     "base_env": "base",

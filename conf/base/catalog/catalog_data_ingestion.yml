@@ -23,3 +23,7 @@ raw_ohlcv:
   metadata:
     kedro-viz:
       layer: raw
+    pandera:
+      schema:
+        type: python.model
+        object_path: rdd.schemas.ohlcv.OHLCVSchema
