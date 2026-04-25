@@ -57,7 +57,6 @@ def _mock_response(html: str) -> MagicMock:
 
 def _make_yf_download(tickers: list[str], dates: pd.DatetimeIndex) -> pd.DataFrame:
     """Build a minimal yfinance-style multi-ticker wide DataFrame."""
-    price_types = ["Open", "High", "Low", "Close", "Adj Close", "Volume"]
     close = 100.0
     data: dict[tuple[str, str], list[float]] = {}
     for ticker in tickers:
@@ -119,7 +118,7 @@ class TestFetchTickerUniverse:
             "index_sources": {"sp500": True, "nasdaq100": True, "russell2000": False},
         }
 
-        def _side_effect(url, **kwargs):
+        def _side_effect(url, **_kwargs):
             if "S%26P" in url:
                 return _mock_response(_SP500_HTML)
             return _mock_response(_NASDAQ100_HTML)
@@ -137,7 +136,7 @@ class TestFetchTickerUniverse:
             "index_sources": {"sp500": True, "nasdaq100": False, "russell2000": True},
         }
 
-        def _side_effect(url, **kwargs):
+        def _side_effect(url, **_kwargs):
             if "ishares" in url:
                 raise OSError("connection refused")
             return _mock_response(_SP500_HTML)
@@ -238,12 +237,15 @@ class TestIngestOHLCV:
 
     def test_up_to_date_skips_download(self, mocker, base_params, ohlcv_df) -> None:
         ticker = "AAPL"
-        today = pd.Timestamp.today().normalize()
+        # Use a fixed weekday "today" to avoid weekend date_range edge cases
+        # (date_range(end=saturday, freq='B') generates n-1 business days).
+        fake_today = pd.Timestamp("2024-01-08")  # Monday
+        mocker.patch.object(pd.Timestamp, "today", return_value=fake_today)
+
         up_to_date_df = ohlcv_df.copy()
         up_to_date_df["ticker"] = ticker
-        # Push the last date to today so nothing needs fetching
         up_to_date_df["date"] = pd.date_range(
-            end=today, periods=len(up_to_date_df), freq="B"
+            end=fake_today, periods=len(up_to_date_df), freq="B"
         )
 
         existing_ohlcv: dict[str, Callable[[], pd.DataFrame]] = {
