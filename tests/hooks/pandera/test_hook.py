@@ -10,10 +10,10 @@ from pandera.errors import SchemaErrors
 
 from rdd.hooks.pandera.hook import PanderaHook
 
-
 # ---------------------------------------------------------------------------
 # Helpers / fixtures
 # ---------------------------------------------------------------------------
+
 
 def _make_catalog(metadata: dict | None) -> MagicMock:
     dataset = MagicMock()
@@ -51,7 +51,7 @@ def _invalid_ohlcv_df() -> pd.DataFrame:
             "ticker": ["AAPL"],
             "date": [pd.Timestamp("2024-01-02")],
             "open": [150.0],
-            "high": [100.0],   # high < low — invalid
+            "high": [100.0],  # high < low — invalid
             "low": [200.0],
             "close": [153.0],
             "adj_close": [152.0],
@@ -74,6 +74,7 @@ _SCHEMA_METADATA = {
 # before_pipeline_run
 # ---------------------------------------------------------------------------
 
+
 class TestBeforePipelineRun:
     def test_clears_validation_cache(self) -> None:
         hook = PanderaHook()
@@ -85,6 +86,7 @@ class TestBeforePipelineRun:
 # ---------------------------------------------------------------------------
 # Valid data passes silently
 # ---------------------------------------------------------------------------
+
 
 class TestValidDataPasses:
     def test_plain_dataframe_passes(self) -> None:
@@ -109,6 +111,7 @@ class TestValidDataPasses:
 # ---------------------------------------------------------------------------
 # Invalid data raises
 # ---------------------------------------------------------------------------
+
 
 class TestInvalidDataRaises:
     def test_plain_dataframe_raises(self) -> None:
@@ -135,6 +138,7 @@ class TestInvalidDataRaises:
 # ---------------------------------------------------------------------------
 # Datasets without pandera metadata are skipped
 # ---------------------------------------------------------------------------
+
 
 class TestMissingMetadataSkipped:
     def test_no_metadata_attribute(self) -> None:
@@ -175,7 +179,7 @@ class TestMissingMetadataSkipped:
         hook.before_node_run(
             node=_make_node(),
             catalog=catalog,
-            inputs={"raw_ohlcv_existing": {"aapl": lambda: _valid_ohlcv_df()}},
+            inputs={"raw_ohlcv_existing": {"aapl": _valid_ohlcv_df()}},
         )
 
 
@@ -183,12 +187,13 @@ class TestMissingMetadataSkipped:
 # Input caching
 # ---------------------------------------------------------------------------
 
+
 class TestInputCaching:
     def test_second_node_skips_revalidation(self) -> None:
         hook = PanderaHook()
         catalog = _make_catalog(_SCHEMA_METADATA)
 
-        with patch.object(hook, "_validate_datasets", wraps=hook._validate_datasets) as spy:
+        with patch.object(hook, "_validate_datasets", wraps=hook._validate_datasets):
             hook.before_node_run(
                 node=_make_node("node_a"),
                 catalog=catalog,
