@@ -25,6 +25,19 @@ repos:
         args: [--fix]
 
   # ---------------------------------------------------------------------------
+  # Dead code detection
+  # ---------------------------------------------------------------------------
+  - repo: local
+    hooks:
+      - id: vulture
+        name: vulture (dead code)
+        language: system
+        entry: uv run vulture
+        args: [src/, --min-confidence, "80"]
+        types: [python]
+        pass_filenames: false
+
+  # ---------------------------------------------------------------------------
   # Secret detection
   # ---------------------------------------------------------------------------
   - repo: https://github.com/Yelp/detect-secrets
