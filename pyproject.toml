@@ -99,8 +99,16 @@ fixable = ["ALL"]
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
 "tests/**/*" = [
-    "S101", # Allow assert in tests
-    "D1",   # Allow missing docstrings in tests
+    "S101",  # Allow assert in tests
+    "D1",    # Allow missing docstrings in tests
+    "ARG001", # Allow unused function arguments in test helpers/side-effects
+]
+"src/rdd/schemas/*.py" = [
+    "N805",  # pandera @dataframe_check uses cls by convention, not self
+]
+"src/rdd/pipelines/data_ingestion/nodes.py" = [
+    "PLR0912", # ingest_ohlcv has many branches — intentional complexity
+    "PLR0915", # ingest_ohlcv has many statements — intentional complexity
 ]
 
 [tool.ruff.lint.pydocstyle]
