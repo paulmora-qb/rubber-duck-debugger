@@ -126,18 +126,16 @@ class Backtester:
 
         day_opens = open_prices.loc[execution_day]
 
-        # Filter out tickers with no open price data
+        # Filter out tickers with no open price data.
+        # Original weights are kept as-is — the portfolio is underinvested rather
+        # than silently shifting capital to the remaining positions.
         valid_signals = signals[signals["ticker"].isin(day_opens.dropna().index)].copy()
         skipped = set(signals["ticker"]) - set(valid_signals["ticker"])
         for t in skipped:
             logger.warning("Ticker %s has no open price on %s — skipping.", t, execution_day.date())
 
-        # Renormalise weights for valid tickers so they still sum to 1
         if valid_signals.empty:
             return cash, []
-
-        valid_signals = valid_signals.copy()
-        valid_signals["weight"] = valid_signals["weight"] / valid_signals["weight"].sum()
 
         portfolio_value = cash + sum(
             holdings.get(t, 0.0) * day_opens[t]

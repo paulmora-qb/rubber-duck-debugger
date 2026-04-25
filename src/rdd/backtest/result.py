@@ -5,7 +5,6 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
-import numpy as np
 import pandas as pd
 
 
@@ -47,7 +46,7 @@ class BacktestResult:
             "total_return": float(total_return),
             "annualised_return": float(annualised_return),
             "max_drawdown": float(max_drawdown),
-            "sharpe_ratio": float(sharpe_ratio) if not np.isnan(sharpe_ratio) else 0.0,
+            "sharpe_ratio": float(sharpe_ratio) if not math.isnan(sharpe_ratio) else 0.0,
             "n_trades": n_trades,
             "total_cost": total_cost,
         }

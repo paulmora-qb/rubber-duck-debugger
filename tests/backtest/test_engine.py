@@ -36,7 +36,6 @@ def _make_ohlcv(
 def _make_signals(
     date: str,
     tickers: list[str],
-    equal_weight: bool = True,
     weights: list[float] | None = None,
 ) -> pd.DataFrame:
     n = len(tickers)
@@ -122,7 +121,9 @@ class TestBacktesterMissingTicker:
     def test_missing_ticker_skipped_with_warning(
         self, flat_ohlcv, trading_days, caplog
     ) -> None:
-        # Signal includes ZZZZ which has no OHLCV data
+        # Signal includes ZZZZ which has no OHLCV data.
+        # AAPL keeps its original weight (0.5) — portfolio is underinvested,
+        # not silently renormalised to 1.0.
         signals = pd.DataFrame({
             "date": pd.to_datetime(["2024-01-02", "2024-01-02"]),
             "ticker": ["AAPL", "ZZZZ"],
@@ -131,10 +132,25 @@ class TestBacktesterMissingTicker:
         })
 
         with caplog.at_level(logging.WARNING, logger="rdd.backtest.engine"):
-            result = Backtester().run(signals, flat_ohlcv)
+            result = Backtester(initial_capital=100_000, cost_bps=0).run(signals, flat_ohlcv)
 
         assert "ZZZZ" in caplog.text
         assert not result.equity_curve.empty
+        # Only 50% of capital deployed — portfolio value after trade ≈ $100k (no price move)
+        assert result.equity_curve.iloc[-1] == pytest.approx(100_000.0, rel=1e-4)
+
+    def test_last_day_signal_is_silently_dropped(self, tickers) -> None:
+        # A rebalance signal on the final trading day has no next open to execute at.
+        # The engine must complete without error; the pending signal is documented as dropped.
+        trading_days = pd.date_range("2024-01-02", periods=3, freq="B")
+        ohlcv = _make_ohlcv(tickers, trading_days)
+        last_day = str(trading_days[-1].date())
+        signals = _make_signals(last_day, tickers)
+
+        result = Backtester().run(signals, ohlcv)
+
+        assert len(result.equity_curve) == len(trading_days)
+        assert result.trades.empty  # signal queued but never executed
 
 
 class TestBacktesterMultipleRebalances:
