@@ -17,6 +17,10 @@ dependencies = [
     "kedro-datasets[pandas-parquetdataset]>=9.2",
     "pandera>=0.21",
     "lxml>=5.0",
+    "matplotlib>=3.10.9",
+    "seaborn>=0.13.2",
+    "jupyter>=1.1.1",
+    "ipykernel>=7.2.0",
 ]
 
 [tool.uv]
