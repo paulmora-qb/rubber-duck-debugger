@@ -36,3 +36,40 @@ def make_ohlcv_df(
 def ohlcv_df() -> pd.DataFrame:
     """Five-row OHLCV DataFrame that satisfies OHLCVSchema (AAPL, 2024-01-02…)."""
     return make_ohlcv_df()
+
+
+def make_company_news_df(
+    n: int = 3,
+    ticker: str = "AAPL",
+    base_date: str = "2024-01-15",
+    start_id: int = 1000,
+) -> pd.DataFrame:
+    """Return *n* valid company news rows for ``CompanyNewsSchema``.
+
+    Args:
+        n: Number of articles to generate.
+        ticker: Ticker symbol to assign to all rows.
+        base_date: ISO date string for the first article; subsequent articles
+            are spaced one hour apart.
+        start_id: Starting ``article_id`` value (increments by 1 per row).
+    """
+    base = pd.Timestamp(base_date)
+    rows = [
+        {
+            "article_id": start_id + i,
+            "ticker": ticker,
+            "datetime": base + pd.Timedelta(hours=i),
+            "headline": f"Headline {i} about {ticker}",
+            "summary": f"Summary {i}: detailed paragraph about {ticker} news.",
+            "source": "Yahoo",
+            "url": f"https://finance.yahoo.com/news/{ticker.lower()}-{start_id + i}",
+        }
+        for i in range(n)
+    ]
+    return pd.DataFrame(rows)
+
+
+@pytest.fixture
+def company_news_df() -> pd.DataFrame:
+    """Three-row company news DataFrame that satisfies CompanyNewsSchema (AAPL)."""
+    return make_company_news_df()
