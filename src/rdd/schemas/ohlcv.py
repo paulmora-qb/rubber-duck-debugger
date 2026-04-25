@@ -62,7 +62,7 @@ class OHLCVSchema(DataFrameModel):
         coerce = True
 
     @pa.dataframe_check
-    def high_gte_low(cls, df: pd.DataFrame) -> pd.Series:
+    def high_gte_low(_cls, df: pd.DataFrame) -> pd.Series:
         """High must be >= low wherever both are present."""
         mask = df["high"].notna() & df["low"].notna()
         return (df.loc[mask, "high"] >= df.loc[mask, "low"]).reindex(
@@ -70,7 +70,7 @@ class OHLCVSchema(DataFrameModel):
         )
 
     @pa.dataframe_check
-    def close_within_high_low(cls, df: pd.DataFrame) -> pd.Series:
+    def close_within_high_low(_cls, df: pd.DataFrame) -> pd.Series:
         """Close must fall within [low, high] wherever all three are present."""
         mask = df["close"].notna() & df["high"].notna() & df["low"].notna()
         within = (df.loc[mask, "close"] >= df.loc[mask, "low"]) & (
