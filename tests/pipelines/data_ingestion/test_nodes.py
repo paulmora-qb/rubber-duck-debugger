@@ -78,7 +78,7 @@ def base_params() -> dict:
     return {
         "start_date": "2023-01-01",
         "batch_size": 100,
-        "index_sources": {"sp500": True, "nasdaq100": False, "russell2000": False},
+        "index_sources": {"sp500": True, "nasdaq100": False},
     }
 
 
@@ -115,7 +115,7 @@ class TestFetchTickerUniverse:
         params = {
             "start_date": "2023-01-01",
             "batch_size": 100,
-            "index_sources": {"sp500": True, "nasdaq100": True, "russell2000": False},
+            "index_sources": {"sp500": True, "nasdaq100": True},
         }
 
         def _side_effect(url, **_kwargs):
@@ -129,23 +129,6 @@ class TestFetchTickerUniverse:
         # AAPL appears in both sources — must appear exactly once
         assert result.count("AAPL") == 1
 
-    def test_russell2000_failure_is_graceful(self, mocker) -> None:
-        params = {
-            "start_date": "2023-01-01",
-            "batch_size": 100,
-            "index_sources": {"sp500": True, "nasdaq100": False, "russell2000": True},
-        }
-
-        def _side_effect(url, **_kwargs):
-            if "ishares" in url:
-                raise OSError("connection refused")
-            return _mock_response(_SP500_HTML)
-
-        mocker.patch("rdd.pipelines.data_ingestion.nodes.requests.get", side_effect=_side_effect)
-
-        # Should not raise; SP 500 tickers still returned
-        result = fetch_ticker_universe(params)
-        assert "AAPL" in result
 
 
 # ---------------------------------------------------------------------------
