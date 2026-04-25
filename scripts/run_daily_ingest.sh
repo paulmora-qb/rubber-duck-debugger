@@ -66,8 +66,7 @@ main() {
   log "=== daily ingest start ==="
 
   run_pipeline data_ingestion
-  run_pipeline finnhub_news
-  run_pipeline newsapi_news
+  run_pipeline finnhub_company_news
 
   log "=== [DONE] ==="
 }
