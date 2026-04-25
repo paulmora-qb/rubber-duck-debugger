@@ -39,6 +39,7 @@ class PanderaHook:
     """
 
     def __init__(self) -> None:
+        """Initialise hook with an empty validated-inputs cache."""
         self._validated_inputs: set[str] = set()
 
     @property
@@ -47,6 +48,7 @@ class PanderaHook:
 
     @hook_impl
     def before_pipeline_run(self) -> None:
+        """Reset the validated-inputs cache before each pipeline run."""
         self._validated_inputs.clear()
 
     @hook_impl
@@ -56,6 +58,7 @@ class PanderaHook:
         catalog: CatalogProtocol,
         inputs: dict[str, Any],
     ) -> None:
+        """Validate node inputs before execution."""
         self._validate_datasets(node, catalog, inputs, cache=True)
 
     @hook_impl
@@ -65,6 +68,7 @@ class PanderaHook:
         catalog: CatalogProtocol,
         outputs: dict[str, Any],
     ) -> None:
+        """Validate node outputs after execution."""
         self._validate_datasets(node, catalog, outputs, cache=False)
 
     # ------------------------------------------------------------------
@@ -118,9 +122,7 @@ class PanderaHook:
                 self._validated_inputs.add(name)
                 self._log.info("(pandera) '%s' passed schema validation", name)
 
-    def _get_schema_config(
-        self, catalog: CatalogProtocol, name: str
-    ) -> dict | None:
+    def _get_schema_config(self, catalog: CatalogProtocol, name: str) -> dict | None:
         dataset = catalog.get(name)
         metadata = getattr(dataset, "metadata", None)
         if not isinstance(metadata, dict):
