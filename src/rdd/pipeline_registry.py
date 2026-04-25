@@ -2,6 +2,7 @@
 
 from kedro.pipeline import Pipeline
 
+from rdd.pipelines.backtest.pipeline import create_pipeline as backtest
 from rdd.pipelines.data_ingestion.pipeline import create_pipeline as data_ingestion
 
 
@@ -10,4 +11,5 @@ def register_pipelines() -> dict[str, Pipeline]:
     return {
         "__default__": data_ingestion(),
         "data_ingestion": data_ingestion(),
+        "backtest": backtest(),
     }

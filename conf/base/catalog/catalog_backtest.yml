@@ -1,0 +1,26 @@
+strategy_signals:
+  type: MemoryDataset
+
+backtest_equity_curve:
+  type: pandas.CSVDataset
+  filepath: ${globals:data_dir}backtest/equity_curve.csv
+  versioned: true
+  metadata:
+    kedro-viz:
+      layer: reporting
+
+backtest_trades:
+  type: pandas.CSVDataset
+  filepath: ${globals:data_dir}backtest/trades.csv
+  versioned: true
+  metadata:
+    kedro-viz:
+      layer: reporting
+
+backtest_positions:
+  type: pandas.ParquetDataset
+  filepath: ${globals:data_dir}backtest/positions.parquet
+  versioned: true
+  metadata:
+    kedro-viz:
+      layer: reporting
