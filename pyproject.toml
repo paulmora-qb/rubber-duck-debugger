@@ -24,7 +24,7 @@ required-version = ">=0.10.0"
 default-groups = ["dev"]
 
 [dependency-groups]
-lint = ["pre-commit>=4.0", "ruff>=0.15"]
+lint = ["pre-commit>=4.0", "ruff>=0.15", "vulture>=2.14"]
 test = ["pytest>=9.0", "pytest-cov", "pytest-mock>=3.0", "pytest-socket>=0.7", "hypothesis>=6.0"]
 dev = [
     { include-group = "lint" },
