@@ -133,7 +133,16 @@ def test_pipeline_output_schema(mocker, pipeline, in_memory_catalog) -> None:
     SequentialRunner().run(pipeline, in_memory_catalog)
 
     result = in_memory_catalog.load("raw_ohlcv")
-    expected_cols = {"ticker", "date", "open", "high", "low", "close", "adj_close", "volume"}
+    expected_cols = {
+        "ticker",
+        "date",
+        "open",
+        "high",
+        "low",
+        "close",
+        "adj_close",
+        "volume",
+    }
     for key, df in result.items():
         assert expected_cols.issubset(df.columns), f"{key}: missing columns"
         assert not df.empty, f"{key}: empty DataFrame"

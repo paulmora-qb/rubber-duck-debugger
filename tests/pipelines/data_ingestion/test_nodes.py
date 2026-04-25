@@ -55,6 +55,7 @@ def _mock_response(html: str) -> MagicMock:
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_yf_download(tickers: list[str], dates: pd.DatetimeIndex) -> pd.DataFrame:
     """Build a minimal yfinance-style multi-ticker wide DataFrame."""
     close = 100.0
@@ -123,12 +124,13 @@ class TestFetchTickerUniverse:
                 return _mock_response(_SP500_HTML)
             return _mock_response(_NASDAQ100_HTML)
 
-        mocker.patch("rdd.pipelines.data_ingestion.nodes.requests.get", side_effect=_side_effect)
+        mocker.patch(
+            "rdd.pipelines.data_ingestion.nodes.requests.get", side_effect=_side_effect
+        )
 
         result = fetch_ticker_universe(params)
         # AAPL appears in both sources — must appear exactly once
         assert result.count("AAPL") == 1
-
 
 
 # ---------------------------------------------------------------------------
@@ -144,7 +146,16 @@ class TestWideToLong:
 
         result = _wide_to_long(wide, tickers)
 
-        assert set(result.columns) >= {"ticker", "date", "open", "high", "low", "close", "adj_close", "volume"}
+        assert set(result.columns) >= {
+            "ticker",
+            "date",
+            "open",
+            "high",
+            "low",
+            "close",
+            "adj_close",
+            "volume",
+        }
         assert set(result["ticker"].unique()) == {"AAPL", "MSFT"}
         assert len(result) == len(tickers) * len(dates)
 
@@ -183,7 +194,9 @@ class TestIngestOHLCV:
         dates = pd.date_range("2023-01-03", periods=3, freq="B")
         mock_dl = _make_yf_download(tickers, dates)
 
-        mocker.patch("rdd.pipelines.data_ingestion.nodes.yf.download", return_value=mock_dl)
+        mocker.patch(
+            "rdd.pipelines.data_ingestion.nodes.yf.download", return_value=mock_dl
+        )
 
         result = ingest_ohlcv(tickers, {}, base_params)
 
@@ -191,7 +204,9 @@ class TestIngestOHLCV:
         assert "msft" in result
         assert len(result["aapl"]) == 3
 
-    def test_incremental_resumes_from_last_date(self, mocker, base_params, ohlcv_df) -> None:
+    def test_incremental_resumes_from_last_date(
+        self, mocker, base_params, ohlcv_df
+    ) -> None:
         ticker = "AAPL"
         # Existing data ends 2024-01-05 — node should ask for data from 2024-01-06
         existing_df = ohlcv_df.copy()

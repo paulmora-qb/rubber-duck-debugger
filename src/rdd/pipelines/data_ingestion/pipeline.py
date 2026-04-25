@@ -17,7 +17,11 @@ def create_pipeline(**_kwargs) -> Pipeline:
             ),
             node(
                 func=ingest_ohlcv,
-                inputs=["ticker_universe", "raw_ohlcv_existing", "params:data_ingestion"],
+                inputs=[
+                    "ticker_universe",
+                    "raw_ohlcv_existing",
+                    "params:data_ingestion",
+                ],
                 outputs="raw_ohlcv",
                 name="ingest_ohlcv",
             ),

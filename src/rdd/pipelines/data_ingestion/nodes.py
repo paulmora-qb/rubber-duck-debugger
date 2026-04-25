@@ -127,7 +127,16 @@ def _wide_to_long(raw: pd.DataFrame, tickers: list[str]) -> pd.DataFrame:
 
     if not rows:
         return pd.DataFrame(
-            columns=["ticker", "date", "open", "high", "low", "close", "adj_close", "volume"]
+            columns=[
+                "ticker",
+                "date",
+                "open",
+                "high",
+                "low",
+                "close",
+                "adj_close",
+                "volume",
+            ]
         )
     return pd.concat(rows, ignore_index=True)
 
@@ -170,17 +179,23 @@ def ingest_ohlcv(
                 df = existing_ohlcv[partition_key]()
                 if not df.empty and "date" in df.columns:
                     existing_data[ticker] = df
-                    ticker_starts[ticker] = pd.Timestamp(df["date"].max()) + pd.Timedelta(days=1)
+                    ticker_starts[ticker] = pd.Timestamp(
+                        df["date"].max()
+                    ) + pd.Timedelta(days=1)
                     continue
             except Exception:
-                logger.warning("Could not load existing partition for %s — will re-fetch.", ticker)
+                logger.warning(
+                    "Could not load existing partition for %s — will re-fetch.", ticker
+                )
         ticker_starts[ticker] = default_start
 
     global_start = min(ticker_starts.values())
 
     if global_start >= end_date:
         logger.info("All tickers are up to date. Nothing to fetch.")
-        return {t.lower(): existing_data[t] for t in ticker_universe if t in existing_data}
+        return {
+            t.lower(): existing_data[t] for t in ticker_universe if t in existing_data
+        }
 
     logger.info(
         "Fetching %d tickers from %s to %s in batches of %d.",
@@ -210,7 +225,11 @@ def ingest_ohlcv(
                 progress=False,
             )
         except Exception:
-            logger.warning("yfinance download failed for batch starting at %s — skipping.", batch[0], exc_info=True)
+            logger.warning(
+                "yfinance download failed for batch starting at %s — skipping.",
+                batch[0],
+                exc_info=True,
+            )
             continue
 
         if raw.empty:
@@ -246,7 +265,11 @@ def ingest_ohlcv(
                 .reset_index(drop=True)
             )
         else:
-            merged = (new if new is not None else old).sort_values("date").reset_index(drop=True)
+            merged = (
+                (new if new is not None else old)
+                .sort_values("date")
+                .reset_index(drop=True)
+            )
 
         result[ticker.lower()] = merged
 
