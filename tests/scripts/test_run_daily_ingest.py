@@ -23,7 +23,9 @@ def test_dry_run_contains_all_pipelines():
         check=False,
     )
     for pipeline in PIPELINES:
-        assert pipeline in result.stdout, f"Missing pipeline in dry-run output: {pipeline}"
+        assert pipeline in result.stdout, (
+            f"Missing pipeline in dry-run output: {pipeline}"
+        )
 
 
 def test_dry_run_pipeline_order():

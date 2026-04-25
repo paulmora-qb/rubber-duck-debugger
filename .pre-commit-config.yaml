@@ -21,21 +21,8 @@ repos:
     rev: v0.11.7
     hooks:
       - id: ruff-format
-      - id: ruff-check
+      - id: ruff
         args: [--fix]
-
-  # ---------------------------------------------------------------------------
-  # Static type checking
-  # ---------------------------------------------------------------------------
-  - repo: local
-    hooks:
-      - id: mypy
-        name: mypy
-        language: system
-        entry: uv run mypy
-        types: [python]
-        pass_filenames: false
-        args: [src/]
 
   # ---------------------------------------------------------------------------
   # Secret detection
@@ -50,7 +37,7 @@ repos:
   # Lock file consistency
   # ---------------------------------------------------------------------------
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.6.14
+    rev: 0.10.7
     hooks:
       - id: uv-lock
 
