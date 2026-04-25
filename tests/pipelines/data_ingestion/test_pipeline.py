@@ -73,7 +73,7 @@ def params():
     return {
         "start_date": "2023-01-01",
         "batch_size": 10,
-        "index_sources": {"sp500": True, "nasdaq100": False, "russell2000": False},
+        "index_sources": {"sp500": True, "nasdaq100": False},
     }
 
 

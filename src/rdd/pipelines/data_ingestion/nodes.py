@@ -11,17 +11,10 @@ import pandas as pd
 import requests
 import yfinance as yf
 
-from rdd.schemas.ohlcv import OHLCVSchema
-
 logger = logging.getLogger(__name__)
 
 _SP500_URL = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
 _NASDAQ100_URL = "https://en.wikipedia.org/wiki/Nasdaq-100"
-_IWM_HOLDINGS_URL = (
-    "https://www.ishares.com/us/products/239710/"
-    "ishares-russell-2000-etf/1467271812596.ajax"
-    "?fileType=csv&fileName=IWM_holdings&dataType=fund"
-)
 
 
 _HEADERS = {
@@ -59,23 +52,11 @@ def _fetch_nasdaq100() -> list[str]:
     raise ValueError(msg)
 
 
-def _fetch_russell2000() -> list[str]:
-    df = pd.read_csv(
-        _IWM_HOLDINGS_URL,
-        skiprows=9,
-        usecols=["Ticker"],
-    )
-    tickers = df["Ticker"].dropna()
-    tickers = tickers[~tickers.str.contains(r"[^A-Z\-\.]", regex=True)]
-    return tickers.map(_normalise_ticker).tolist()
-
-
 def fetch_ticker_universe(params: dict[str, Any]) -> list[str]:
     """Fetch the equity universe from configured index sources.
 
-    Pulls constituents from S&P 500, NASDAQ 100, and/or Russell 2000 (iShares
-    IWM). Deduplicates across sources and returns a sorted list of yfinance-
-    compatible ticker symbols.
+    Pulls constituents from S&P 500 and/or NASDAQ 100. Deduplicates across
+    sources and returns a sorted list of yfinance-compatible ticker symbols.
 
     Args:
         params: ``data_ingestion`` parameter block from ``params_data_ingestion.yml``.
@@ -95,17 +76,6 @@ def fetch_ticker_universe(params: dict[str, Any]) -> list[str]:
         fetched = _fetch_nasdaq100()
         logger.info("NASDAQ 100: %d tickers", len(fetched))
         tickers.update(fetched)
-
-    if sources.get("russell2000"):
-        try:
-            fetched = _fetch_russell2000()
-            logger.info("Russell 2000: %d tickers", len(fetched))
-            tickers.update(fetched)
-        except Exception:
-            logger.warning(
-                "Failed to fetch Russell 2000 constituents from iShares — skipping.",
-                exc_info=True,
-            )
 
     result = sorted(tickers)
     logger.info("Total unique tickers in universe: %d", len(result))
@@ -174,8 +144,7 @@ def ingest_ohlcv(
     - Subsequent runs: fetches from the day after the latest stored date.
 
     Downloads are batched in groups of ``params.batch_size`` tickers to stay
-    within yfinance's practical limits. The merged DataFrame for each ticker is
-    validated against ``OHLCVSchema`` before being returned for storage.
+    within yfinance's practical limits.
 
     Args:
         ticker_universe: List of ticker symbols to ingest.
@@ -184,8 +153,7 @@ def ingest_ohlcv(
         params: ``data_ingestion`` parameter block.
 
     Returns:
-        Mapping of ticker → merged, validated DataFrame for the
-        ``PartitionedDataset`` to persist.
+        Mapping of ticker → merged DataFrame for the ``PartitionedDataset`` to persist.
     """
     default_start = pd.Timestamp(params["start_date"])
     batch_size = int(params["batch_size"])
@@ -279,12 +247,6 @@ def ingest_ohlcv(
             )
         else:
             merged = (new if new is not None else old).sort_values("date").reset_index(drop=True)
-
-        try:
-            OHLCVSchema.validate(merged)
-        except Exception:
-            logger.warning("Schema validation failed for %s — skipping.", ticker, exc_info=True)
-            continue
 
         result[ticker.lower()] = merged
 

@@ -4,4 +4,3 @@ data_ingestion:
   index_sources:
     sp500: true
     nasdaq100: true
-    russell2000: false  # IWM source is fragile — enable manually once verified
