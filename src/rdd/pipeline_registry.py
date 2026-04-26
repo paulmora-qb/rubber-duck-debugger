@@ -2,12 +2,19 @@
 
 from kedro.pipeline import Pipeline
 
+from rdd.pipelines.company_info.pipeline import create_pipeline as company_info
+from rdd.pipelines.company_news.pipeline import create_pipeline as company_news
 from rdd.pipelines.data_ingestion.pipeline import create_pipeline as data_ingestion
 
 
 def register_pipelines() -> dict[str, Pipeline]:
     """Register all project pipelines."""
+    di = data_ingestion()
+    ci = company_info()
+    cn = company_news()
     return {
-        "__default__": data_ingestion(),
-        "data_ingestion": data_ingestion(),
+        "__default__": di + ci + cn,
+        "data_ingestion": di,
+        "company_info": ci,
+        "company_news": cn,
     }
