@@ -17,6 +17,7 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 LOG_DIR="$PROJECT_ROOT/logs"
 LOG_FILE="$LOG_DIR/daily_ingest.log"
 DRY_RUN=false
+CRON_BRANCH="main"
 
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
 
@@ -83,6 +84,14 @@ send_report() {
     log "[EMAIL] failed to send report (check SMTP credentials in .env)"
 }
 
+sync_branch() {
+  log "[GIT] syncing to $CRON_BRANCH..."
+  git -C "$PROJECT_ROOT" fetch origin "$CRON_BRANCH" >> "$LOG_FILE" 2>&1
+  git -C "$PROJECT_ROOT" checkout "$CRON_BRANCH" >> "$LOG_FILE" 2>&1
+  git -C "$PROJECT_ROOT" pull --ff-only origin "$CRON_BRANCH" >> "$LOG_FILE" 2>&1
+  log "[GIT] HEAD=$(git -C "$PROJECT_ROOT" rev-parse --short HEAD)"
+}
+
 main() {
   if [[ -f "$PROJECT_ROOT/.env" ]]; then
     set -a
@@ -92,6 +101,7 @@ main() {
   fi
 
   log "=== daily ingest start ==="
+  sync_branch
 
   run_pipeline data_ingestion
   run_pipeline finnhub_news
