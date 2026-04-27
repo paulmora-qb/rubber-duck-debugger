@@ -38,6 +38,11 @@ _MEMBERSHIP_CACHE = _LOGS_DIR / "ticker_membership.json"
 _MEMBERSHIP_TTL_DAYS = 7
 _HISTORY_DAYS = 30
 
+_BLUE = "#1f77b4"
+_ORANGE = "#ff7f0e"
+_GREEN = "#2ca02c"
+_PURPLE = "#9467bd"
+
 
 # ---------------------------------------------------------------------------
 # Ticker index membership (S&P 500 / NASDAQ 100), cached locally
@@ -124,6 +129,41 @@ def _count_by_index(
 
 
 # ---------------------------------------------------------------------------
+# Company data counts
+# ---------------------------------------------------------------------------
+
+
+def _count_company_info(company_info_dir: str | None) -> int:
+    """Count ticker snapshots present in the company_info directory."""
+    if not company_info_dir:
+        return 0
+    p = Path(company_info_dir)
+    if not p.exists():
+        return 0
+    return sum(1 for _ in p.glob("*.parquet"))
+
+
+def _count_company_news(company_news_dir: str | None) -> tuple[int, int]:
+    """Return (tickers_with_news, total_articles) from the company_news directory."""
+    if not company_news_dir:
+        return 0, 0
+    p = Path(company_news_dir)
+    if not p.exists():
+        return 0, 0
+    tickers = 0
+    total_articles = 0
+    for f in p.glob("*.parquet"):
+        try:
+            df = pd.read_parquet(f, columns=["published_at"])
+            if not df.empty:
+                tickers += 1
+                total_articles += len(df)
+        except Exception:
+            _logger.warning("Failed to read news parquet %s", f, exc_info=True)
+    return tickers, total_articles
+
+
+# ---------------------------------------------------------------------------
 # Historical backfill
 # ---------------------------------------------------------------------------
 
@@ -175,7 +215,14 @@ def _backfill_manifest(
 # ---------------------------------------------------------------------------
 
 
-def _append_manifest(run_date: date, counts: dict[str, int], status: str) -> None:
+def _append_manifest(
+    run_date: date,
+    counts: dict[str, int],
+    status: str,
+    n_company_info: int = 0,
+    n_company_news_tickers: int = 0,
+    n_company_news_articles: int = 0,
+) -> None:
     """Append a run record to the JSONL manifest."""
     _MANIFEST.parent.mkdir(parents=True, exist_ok=True)
     with _MANIFEST.open("a") as fh:
@@ -186,6 +233,9 @@ def _append_manifest(run_date: date, counts: dict[str, int], status: str) -> Non
                     "n_sp500": counts["sp500"],
                     "n_nasdaq100": counts["nasdaq100"],
                     "n_total": counts["total"],
+                    "n_company_info": n_company_info,
+                    "n_company_news_tickers": n_company_news_tickers,
+                    "n_company_news_articles": n_company_news_articles,
                     "status": status,
                 }
             )
@@ -232,17 +282,12 @@ def _make_chart(history: dict[date, dict], membership: dict[str, set[str]]) -> b
 
     if dates:
         ax.plot(
-            dates,
-            sp500_counts,
-            color="#1f77b4",
-            marker="o",
-            markersize=4,
-            label="S&P 500",
+            dates, sp500_counts, color=_BLUE, marker="o", markersize=4, label="S&P 500"
         )
         ax.plot(
             dates,
             ndx100_counts,
-            color="#ff7f0e",
+            color=_ORANGE,
             marker="s",
             markersize=4,
             label="NASDAQ 100",
@@ -251,7 +296,7 @@ def _make_chart(history: dict[date, dict], membership: dict[str, set[str]]) -> b
     if sp500_expected:
         ax.axhline(
             sp500_expected,
-            color="#1f77b4",
+            color=_BLUE,
             linestyle="--",
             linewidth=0.8,
             alpha=0.6,
@@ -260,7 +305,7 @@ def _make_chart(history: dict[date, dict], membership: dict[str, set[str]]) -> b
     if ndx100_expected:
         ax.axhline(
             ndx100_expected,
-            color="#ff7f0e",
+            color=_ORANGE,
             linestyle="--",
             linewidth=0.8,
             alpha=0.6,
@@ -275,6 +320,91 @@ def _make_chart(history: dict[date, dict], membership: dict[str, set[str]]) -> b
     ax.tick_params(axis="x", labelrotation=30, labelsize=7)
     fig.tight_layout()
 
+    buf = io.BytesIO()
+    fig.savefig(buf, format="png", bbox_inches="tight", dpi=120)
+    plt.close(fig)
+    return buf.getvalue()
+
+
+def _make_company_info_chart(history: dict[date, dict], universe_size: int) -> bytes:
+    """Render company info snapshot coverage over time as a PNG."""
+    today = date.today()
+    dates = sorted(d for d in history if d <= today)
+    counts = [history[d].get("n_company_info", 0) for d in dates]
+
+    fig, ax = plt.subplots(figsize=(10, 3))
+    if dates:
+        ax.plot(
+            dates,
+            counts,
+            color=_GREEN,
+            marker="o",
+            markersize=4,
+            label="Snapshots stored",
+        )
+    if universe_size:
+        ax.axhline(
+            universe_size,
+            color=_GREEN,
+            linestyle="--",
+            linewidth=0.8,
+            alpha=0.6,
+            label=f"Universe ({universe_size})",
+        )
+    ax.set_title(f"Company info snapshots — last {_HISTORY_DAYS} days", fontsize=10)
+    ax.set_ylabel("Tickers with snapshot")
+    ax.set_xlabel("Run date")
+    ax.legend(fontsize=8, loc="lower right")
+    ax.grid(axis="y", linestyle="--", alpha=0.4)
+    ax.tick_params(axis="x", labelrotation=30, labelsize=7)
+    fig.tight_layout()
+
+    buf = io.BytesIO()
+    fig.savefig(buf, format="png", bbox_inches="tight", dpi=120)
+    plt.close(fig)
+    return buf.getvalue()
+
+
+def _make_company_news_chart(history: dict[date, dict]) -> bytes:
+    """Render company news coverage over time (tickers covered + cumulative articles)."""
+    today = date.today()
+    dates = sorted(d for d in history if d <= today)
+    tickers = [history[d].get("n_company_news_tickers", 0) for d in dates]
+    articles = [history[d].get("n_company_news_articles", 0) for d in dates]
+
+    fig, ax1 = plt.subplots(figsize=(10, 3))
+    ax2 = ax1.twinx()
+
+    if dates:
+        ax1.plot(
+            dates,
+            tickers,
+            color=_PURPLE,
+            marker="o",
+            markersize=4,
+            label="Tickers with news",
+        )
+        ax2.plot(
+            dates,
+            articles,
+            color=_ORANGE,
+            marker="s",
+            markersize=4,
+            linestyle="--",
+            label="Total articles",
+        )
+
+    ax1.set_title(f"Company news coverage — last {_HISTORY_DAYS} days", fontsize=10)
+    ax1.set_ylabel("Tickers with news", color=_PURPLE)
+    ax2.set_ylabel("Total articles stored", color=_ORANGE)
+    ax1.tick_params(axis="x", labelrotation=30, labelsize=7)
+    ax1.grid(axis="y", linestyle="--", alpha=0.4)
+
+    lines1, labels1 = ax1.get_legend_handles_labels()
+    lines2, labels2 = ax2.get_legend_handles_labels()
+    ax1.legend(lines1 + lines2, labels1 + labels2, fontsize=8, loc="lower right")
+
+    fig.tight_layout()
     buf = io.BytesIO()
     fig.savefig(buf, format="png", bbox_inches="tight", dpi=120)
     plt.close(fig)
@@ -307,6 +437,9 @@ def _html_body(
     results: dict[str, str],
     log_paths: dict[str, str],
     counts: dict[str, int],
+    n_company_info: int,
+    n_company_news_tickers: int,
+    n_company_news_articles: int,
 ) -> str:
     """Build the HTML email body."""
     icons = {"ok": "✓", "skip": "—", "fail": "✗"}
@@ -317,9 +450,15 @@ def _html_body(
     n_total = counts.get("total", 0)
     n_sp500 = counts.get("sp500", 0)
     n_ndx100 = counts.get("nasdaq100", 0)
-    coverage = (
+    ohlcv_coverage = (
         f"{n_total} stocks &nbsp;|&nbsp; S&amp;P 500: {n_sp500} &nbsp;|&nbsp; NASDAQ 100: {n_ndx100}"
         if n_total
+        else "—"
+    )
+    info_coverage = f"{n_company_info} ticker snapshots" if n_company_info else "—"
+    news_coverage = (
+        f"{n_company_news_tickers} tickers &nbsp;|&nbsp; {n_company_news_articles:,} total articles"
+        if n_company_news_tickers
         else "—"
     )
     log_sections = "".join(
@@ -334,8 +473,15 @@ def _html_body(
   <tr style="background:#f0f0f0"><th>Status</th><th>Pipeline</th><th>Result</th></tr>
   {rows}
 </table>
-<p><b>Fetched today:</b> {coverage}</p>
-<p><img src="cid:chart" alt="Stocks fetched per run" style="max-width:820px"/></p>
+<h3>OHLCV</h3>
+<p><b>Fetched today:</b> {ohlcv_coverage}</p>
+<p><img src="cid:chart_ohlcv" alt="Stocks fetched per run" style="max-width:820px"/></p>
+<h3>Company Info</h3>
+<p><b>Snapshots stored:</b> {info_coverage}</p>
+<p><img src="cid:chart_company_info" alt="Company info snapshots" style="max-width:820px"/></p>
+<h3>Company News</h3>
+<p><b>Coverage:</b> {news_coverage}</p>
+<p><img src="cid:chart_company_news" alt="Company news coverage" style="max-width:820px"/></p>
 {log_sections}
 </body></html>
 """
@@ -352,12 +498,19 @@ def main() -> None:
     parser.add_argument(
         "--ohlcv-dir", default=None, help="Path to data/raw/ohlcv directory"
     )
+    parser.add_argument(
+        "--company-info-dir", default=None, help="Path to data/raw/company_info"
+    )
+    parser.add_argument(
+        "--company-news-dir", default=None, help="Path to data/raw/company_news"
+    )
     parser.add_argument("triplets", nargs="*")
     args = parser.parse_args()
 
     if not args.triplets or len(args.triplets) % 3 != 0:
         sys.exit(
-            "Usage: send_report.py [--ohlcv-dir DIR] <pipeline> <status> <log_path> ..."
+            "Usage: send_report.py [--ohlcv-dir DIR] [--company-info-dir DIR]"
+            " [--company-news-dir DIR] <pipeline> <status> <log_path> ..."
         )
 
     results: dict[str, str] = {}
@@ -372,14 +525,33 @@ def main() -> None:
         log_paths[name] = log_path
 
     membership = _load_membership()
+    universe_size = len(
+        membership.get("sp500", set()) | membership.get("nasdaq100", set())
+    )
+
     counts = _count_by_index(args.ohlcv_dir, membership)
+    n_company_info = _count_company_info(args.company_info_dir)
+    n_company_news_tickers, n_company_news_articles = _count_company_news(
+        args.company_news_dir
+    )
+
     overall = "fail" if any(s == "fail" for s in results.values()) else "ok"
-    _append_manifest(date.today(), counts, overall)
+    _append_manifest(
+        date.today(),
+        counts,
+        overall,
+        n_company_info=n_company_info,
+        n_company_news_tickers=n_company_news_tickers,
+        n_company_news_articles=n_company_news_articles,
+    )
 
     history = _load_manifest()
     _backfill_manifest(args.ohlcv_dir, membership, history)
     history = _load_manifest()  # reload after backfill
-    chart_png = _make_chart(history, membership)
+
+    chart_ohlcv = _make_chart(history, membership)
+    chart_company_info = _make_company_info_chart(history, universe_size)
+    chart_company_news = _make_company_news_chart(history)
 
     to_addr = os.environ["RDD_EMAIL_TO"]
     smtp_host = os.environ.get("RDD_SMTP_HOST", "smtp.gmail.com")
@@ -393,13 +565,30 @@ def main() -> None:
     msg["To"] = to_addr
 
     alt = MIMEMultipart("alternative")
-    alt.attach(MIMEText(_html_body(results, log_paths, counts), "html"))
+    alt.attach(
+        MIMEText(
+            _html_body(
+                results,
+                log_paths,
+                counts,
+                n_company_info,
+                n_company_news_tickers,
+                n_company_news_articles,
+            ),
+            "html",
+        )
+    )
     msg.attach(alt)
 
-    img = MIMEImage(chart_png)
-    img.add_header("Content-ID", "<chart>")
-    img.add_header("Content-Disposition", "inline", filename="chart.png")
-    msg.attach(img)
+    for cid, png, filename in [
+        ("chart_ohlcv", chart_ohlcv, "chart_ohlcv.png"),
+        ("chart_company_info", chart_company_info, "chart_company_info.png"),
+        ("chart_company_news", chart_company_news, "chart_company_news.png"),
+    ]:
+        img = MIMEImage(png)
+        img.add_header("Content-ID", f"<{cid}>")
+        img.add_header("Content-Disposition", "inline", filename=filename)
+        msg.attach(img)
 
     ctx = ssl.create_default_context()
     with smtplib.SMTP_SSL(smtp_host, smtp_port, context=ctx, timeout=30) as conn:
