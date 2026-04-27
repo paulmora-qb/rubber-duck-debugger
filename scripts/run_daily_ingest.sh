@@ -123,6 +123,7 @@ main() {
   run_pipeline company_info
   run_pipeline company_news
   backfill_news
+  run_pipeline strategies
 
   if ! $DRY_RUN; then
     send_report
