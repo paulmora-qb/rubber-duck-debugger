@@ -12,7 +12,7 @@ from unittest.mock import MagicMock, PropertyMock
 import pandas as pd
 import pytest
 
-from rdd.pipelines.company_financials.nodes import (
+from rdd.pipelines.company_information.company_financials.nodes import (
     _ALL_METRIC_COLS,
     _BALANCE_FIELDS,
     _INCOME_FIELDS,
@@ -111,7 +111,8 @@ class TestFetchFinancials:
     def test_quarterly_fetch_returns_dataframe(self, mocker) -> None:
         mock = _make_mock_ticker(quarterly=True)
         mocker.patch(
-            "rdd.pipelines.company_financials.nodes.yf.Ticker", return_value=mock
+            "rdd.pipelines.company_information.company_financials.nodes.yf.Ticker",
+            return_value=mock,
         )
 
         df = _fetch_financials("AAPL", quarterly=True)
@@ -125,7 +126,8 @@ class TestFetchFinancials:
     def test_annual_fetch_returns_dataframe(self, mocker) -> None:
         mock = _make_mock_ticker(quarterly=False)
         mocker.patch(
-            "rdd.pipelines.company_financials.nodes.yf.Ticker", return_value=mock
+            "rdd.pipelines.company_information.company_financials.nodes.yf.Ticker",
+            return_value=mock,
         )
 
         df = _fetch_financials("AAPL", quarterly=False)
@@ -135,7 +137,7 @@ class TestFetchFinancials:
 
     def test_exception_returns_none(self, mocker) -> None:
         mocker.patch(
-            "rdd.pipelines.company_financials.nodes.yf.Ticker",
+            "rdd.pipelines.company_information.company_financials.nodes.yf.Ticker",
             side_effect=RuntimeError("API error"),
         )
 
@@ -146,7 +148,8 @@ class TestFetchFinancials:
     def test_all_metric_cols_present(self, mocker) -> None:
         mock = _make_mock_ticker(quarterly=True)
         mocker.patch(
-            "rdd.pipelines.company_financials.nodes.yf.Ticker", return_value=mock
+            "rdd.pipelines.company_information.company_financials.nodes.yf.Ticker",
+            return_value=mock,
         )
 
         df = _fetch_financials("AAPL", quarterly=True)
@@ -158,7 +161,8 @@ class TestFetchFinancials:
     def test_fetched_at_is_set(self, mocker) -> None:
         mock = _make_mock_ticker(quarterly=True)
         mocker.patch(
-            "rdd.pipelines.company_financials.nodes.yf.Ticker", return_value=mock
+            "rdd.pipelines.company_information.company_financials.nodes.yf.Ticker",
+            return_value=mock,
         )
 
         df = _fetch_financials("AAPL", quarterly=True)
@@ -172,7 +176,8 @@ class TestIngestCompanyFinancials:
     def test_first_run_fetches_all_tickers(self, mocker, base_params) -> None:
         mock = _make_mock_ticker(quarterly=None)
         mocker.patch(
-            "rdd.pipelines.company_financials.nodes.yf.Ticker", return_value=mock
+            "rdd.pipelines.company_information.company_financials.nodes.yf.Ticker",
+            return_value=mock,
         )
 
         quarterly, annual = ingest_company_financials(
@@ -195,7 +200,9 @@ class TestIngestCompanyFinancials:
 
         existing_q: dict[str, Callable[[], pd.DataFrame]] = {"aapl": lambda: fresh}
         existing_a: dict[str, Callable[[], pd.DataFrame]] = {"aapl": lambda: fresh}
-        yf_spy = mocker.patch("rdd.pipelines.company_financials.nodes.yf.Ticker")
+        yf_spy = mocker.patch(
+            "rdd.pipelines.company_information.company_financials.nodes.yf.Ticker"
+        )
 
         ingest_company_financials(["AAPL"], existing_q, existing_a, base_params)
 
@@ -214,7 +221,8 @@ class TestIngestCompanyFinancials:
 
         mock = _make_mock_ticker(quarterly=None)
         mocker.patch(
-            "rdd.pipelines.company_financials.nodes.yf.Ticker", return_value=mock
+            "rdd.pipelines.company_information.company_financials.nodes.yf.Ticker",
+            return_value=mock,
         )
 
         quarterly, _ = ingest_company_financials(
@@ -226,7 +234,7 @@ class TestIngestCompanyFinancials:
 
     def test_failed_fetch_is_skipped(self, mocker, base_params) -> None:
         mocker.patch(
-            "rdd.pipelines.company_financials.nodes.yf.Ticker",
+            "rdd.pipelines.company_information.company_financials.nodes.yf.Ticker",
             side_effect=RuntimeError("API error"),
         )
 

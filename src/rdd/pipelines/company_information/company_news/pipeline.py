@@ -2,7 +2,7 @@
 
 from kedro.pipeline import Pipeline, node
 
-from rdd.pipelines.company_news.nodes import ingest_company_news
+from rdd.pipelines.company_information.company_news.nodes import ingest_company_news
 
 
 def create_pipeline(**_kwargs) -> Pipeline:
