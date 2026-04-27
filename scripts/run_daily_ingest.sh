@@ -75,7 +75,11 @@ run_pipeline() {
 }
 
 send_report() {
-  local args=("--ohlcv-dir" "$PROJECT_ROOT/data/raw/ohlcv")
+  local args=(
+    "--ohlcv-dir"        "$PROJECT_ROOT/data/raw/ohlcv"
+    "--company-info-dir" "$PROJECT_ROOT/data/raw/company_info"
+    "--company-news-dir" "$PROJECT_ROOT/data/raw/company_news"
+  )
   for i in "${!PIPELINE_NAMES[@]}"; do
     args+=("${PIPELINE_NAMES[$i]}" "${PIPELINE_STATUSES[$i]}" "${PIPELINE_LOG_FILES[$i]}")
   done
@@ -106,6 +110,8 @@ main() {
   fi
 
   run_pipeline data_ingestion
+  run_pipeline company_info
+  run_pipeline company_news
 
   if ! $DRY_RUN; then
     send_report

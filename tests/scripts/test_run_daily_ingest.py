@@ -2,7 +2,7 @@ import subprocess
 from pathlib import Path
 
 SCRIPT = Path(__file__).parent.parent.parent / "scripts" / "run_daily_ingest.sh"
-PIPELINES = ["data_ingestion"]
+PIPELINES = ["data_ingestion", "company_info", "company_news"]
 
 
 def test_dry_run_exits_zero():
