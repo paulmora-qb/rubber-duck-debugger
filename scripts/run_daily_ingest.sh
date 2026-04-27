@@ -74,6 +74,16 @@ run_pipeline() {
   fi
 }
 
+backfill_news() {
+  if $DRY_RUN; then
+    echo "[DRY-RUN] uv run python scripts/backfill_company_news.py --days 1"
+    return 0
+  fi
+  log "[BACKFILL] extending company news history by 1 day per ticker..."
+  (cd "$PROJECT_ROOT" && uv run python scripts/backfill_company_news.py --days 1) >> "$LOG_FILE" 2>&1 || \
+    log "[BACKFILL] backfill failed (non-fatal)"
+}
+
 send_report() {
   local args=(
     "--ohlcv-dir"        "$PROJECT_ROOT/data/raw/ohlcv"
@@ -112,6 +122,7 @@ main() {
   run_pipeline data_ingestion
   run_pipeline company_info
   run_pipeline company_news
+  backfill_news
 
   if ! $DRY_RUN; then
     send_report
