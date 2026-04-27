@@ -75,7 +75,7 @@ run_pipeline() {
 }
 
 send_report() {
-  local args=()
+  local args=("--ohlcv-dir" "$PROJECT_ROOT/data/raw/ohlcv")
   for i in "${!PIPELINE_NAMES[@]}"; do
     args+=("${PIPELINE_NAMES[$i]}" "${PIPELINE_STATUSES[$i]}" "${PIPELINE_LOG_FILES[$i]}")
   done
