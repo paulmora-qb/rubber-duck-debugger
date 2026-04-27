@@ -10,42 +10,48 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# ── Code Quality ──────────────────────────────────────────────────────────────
+
 jobs:
-  ruff:
-    name: ruff
+  lint-ruff:
+    name: "Code Quality / Ruff lint"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/ruff-action@v3
-        name: Run the ruff linter
         with:
           version: "0.15.11"
+
+  format-ruff:
+    name: "Code Quality / Ruff format"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
       - uses: astral-sh/ruff-action@v3
-        name: Run the ruff formatter check
         with:
           version: "0.15.11"
           args: "format --check --diff"
 
-  pytest:
-    name: pytest
+  pre-commit-eof:
+    name: "Code Quality / End-of-file fixer"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-python-uv
-      - name: Run pytest
-        run: uv run --locked pytest --ignore=tests/scripts
+      - name: Check end-of-file
+        run: uv run --locked pre-commit run end-of-file-fixer --all-files
 
-  pytest-scripts:
-    name: pytest-scripts
+  pre-commit-whitespace:
+    name: "Code Quality / Trailing whitespace"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-python-uv
-      - name: Run script tests
-        run: uv run --locked pytest tests/scripts
+      - name: Check trailing whitespace
+        run: uv run --locked pre-commit run trailing-whitespace --all-files
 
-  check-uv-lock:
-    name: check-uv-lock
+  lock-file:
+    name: "Code Quality / uv.lock up to date"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -53,13 +59,40 @@ jobs:
       - name: Check uv.lock is up to date
         run: uv lock --check
 
-  pre-commit:
-    name: pre-commit
+# ── Tests ─────────────────────────────────────────────────────────────────────
+
+  test-pipelines:
+    name: "Tests / Pipelines"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-python-uv
-      - name: Run end-of-file-fixer
-        run: uv run --locked pre-commit run end-of-file-fixer --all-files
-      - name: Run trailing-whitespace
-        run: uv run --locked pre-commit run trailing-whitespace --all-files
+      - name: Run pipeline tests
+        run: uv run --locked pytest tests/pipelines
+
+  test-schemas:
+    name: "Tests / Schemas"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup-python-uv
+      - name: Run schema tests
+        run: uv run --locked pytest tests/schemas
+
+  test-hooks:
+    name: "Tests / Hooks"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup-python-uv
+      - name: Run hook tests
+        run: uv run --locked pytest tests/hooks
+
+  test-scripts:
+    name: "Tests / Scripts"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup-python-uv
+      - name: Run script tests
+        run: uv run --locked pytest tests/scripts
