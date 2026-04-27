@@ -1,0 +1,47 @@
+raw_company_financials_quarterly_existing:
+  type: rdd.datasets.nullable_partitioned.NullablePartitionedDataset
+  path: ${globals:data_dir}raw/company_financials/quarterly
+  dataset:
+    type: pandas.ParquetDataset
+  filename_suffix: ".parquet"
+  metadata:
+    kedro-viz:
+      layer: raw
+
+raw_company_financials_quarterly:
+  type: kedro_datasets.partitions.PartitionedDataset
+  path: ${globals:data_dir}raw/company_financials/quarterly
+  dataset:
+    type: pandas.ParquetDataset
+  filename_suffix: ".parquet"
+  metadata:
+    kedro-viz:
+      layer: raw
+    pandera:
+      schema:
+        type: python.model
+        object_path: rdd.schemas.company_financials.CompanyFinancialsSchema
+
+raw_company_financials_annual_existing:
+  type: rdd.datasets.nullable_partitioned.NullablePartitionedDataset
+  path: ${globals:data_dir}raw/company_financials/annual
+  dataset:
+    type: pandas.ParquetDataset
+  filename_suffix: ".parquet"
+  metadata:
+    kedro-viz:
+      layer: raw
+
+raw_company_financials_annual:
+  type: kedro_datasets.partitions.PartitionedDataset
+  path: ${globals:data_dir}raw/company_financials/annual
+  dataset:
+    type: pandas.ParquetDataset
+  filename_suffix: ".parquet"
+  metadata:
+    kedro-viz:
+      layer: raw
+    pandera:
+      schema:
+        type: python.model
+        object_path: rdd.schemas.company_financials.CompanyFinancialsSchema
