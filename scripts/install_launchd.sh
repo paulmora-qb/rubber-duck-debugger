@@ -1,5 +1,5 @@
 #!/bin/bash
-# Installs the RDD daily ingest as a launchd agent at 17:00 local (10:00 UTC, Mon–Fri).
+# Installs the RDD daily ingest as a launchd agent at 10:00 local, Mon–Fri.
 # Unlike cron, launchd catches up missed runs when the machine wakes up.
 # Idempotent — safe to run multiple times.
 
@@ -37,14 +37,14 @@ cat > "$PLIST_DEST" <<PLIST
         <string>$RUNNER</string>
     </array>
 
-    <!-- 17:00 local (UTC+7) = 10:00 UTC, weekdays only -->
+    <!-- 10:00 local, weekdays only -->
     <key>StartCalendarInterval</key>
     <array>
-        <dict><key>Weekday</key><integer>1</integer><key>Hour</key><integer>17</integer><key>Minute</key><integer>0</integer></dict>
-        <dict><key>Weekday</key><integer>2</integer><key>Hour</key><integer>17</integer><key>Minute</key><integer>0</integer></dict>
-        <dict><key>Weekday</key><integer>3</integer><key>Hour</key><integer>17</integer><key>Minute</key><integer>0</integer></dict>
-        <dict><key>Weekday</key><integer>4</integer><key>Hour</key><integer>17</integer><key>Minute</key><integer>0</integer></dict>
-        <dict><key>Weekday</key><integer>5</integer><key>Hour</key><integer>17</integer><key>Minute</key><integer>0</integer></dict>
+        <dict><key>Weekday</key><integer>1</integer><key>Hour</key><integer>10</integer><key>Minute</key><integer>0</integer></dict>
+        <dict><key>Weekday</key><integer>2</integer><key>Hour</key><integer>10</integer><key>Minute</key><integer>0</integer></dict>
+        <dict><key>Weekday</key><integer>3</integer><key>Hour</key><integer>10</integer><key>Minute</key><integer>0</integer></dict>
+        <dict><key>Weekday</key><integer>4</integer><key>Hour</key><integer>10</integer><key>Minute</key><integer>0</integer></dict>
+        <dict><key>Weekday</key><integer>5</integer><key>Hour</key><integer>10</integer><key>Minute</key><integer>0</integer></dict>
     </array>
 
     <key>EnvironmentVariables</key>
@@ -68,5 +68,5 @@ launchctl unload "$PLIST_DEST" 2>/dev/null || true
 launchctl load "$PLIST_DEST"
 
 echo "Installed launchd agent: $LABEL"
-echo "Runs Mon–Fri at 17:00 local (10:00 UTC). Catches up missed runs on wake."
+echo "Runs Mon–Fri at 10:00 local. Catches up missed runs on wake."
 echo "Plist: $PLIST_DEST"
