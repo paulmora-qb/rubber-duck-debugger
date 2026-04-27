@@ -120,6 +120,54 @@ def _count_by_index(
 
 
 # ---------------------------------------------------------------------------
+# Historical backfill
+# ---------------------------------------------------------------------------
+
+
+def _backfill_manifest(
+    ohlcv_dir: str | None,
+    membership: dict[str, set[str]],
+    existing: dict[date, dict],
+    days: int = _HISTORY_DAYS,
+) -> None:
+    """Populate manifest with per-date counts inferred from parquet date columns.
+
+    Reads only the date column from each parquet to build a {date: set(tickers)}
+    mapping, then writes manifest entries for any trading days not already present.
+    """
+    if not ohlcv_dir:
+        return
+    p = Path(ohlcv_dir)
+    if not p.exists():
+        return
+
+    import pandas as pd
+
+    cutoff = date.today() - timedelta(days=days)
+    date_tickers: dict[date, set[str]] = {}
+
+    for f in p.glob("*.parquet"):
+        ticker = f.stem.upper()
+        try:
+            df = pd.read_parquet(f, columns=["date"])
+            for d in df["date"].dt.date.unique():
+                if d >= cutoff:
+                    date_tickers.setdefault(d, set()).add(ticker)
+        except Exception:  # noqa: BLE001
+            continue
+
+    for d, tickers in sorted(date_tickers.items()):
+        if d in existing:
+            continue
+        counts = {
+            "sp500": len(tickers & membership.get("sp500", set())),
+            "nasdaq100": len(tickers & membership.get("nasdaq100", set())),
+            "total": len(tickers),
+        }
+        _append_manifest(d, counts, "ok")
+
+
+# ---------------------------------------------------------------------------
 # Run manifest
 # ---------------------------------------------------------------------------
 
@@ -292,6 +340,8 @@ def main() -> None:
     _append_manifest(date.today(), counts, overall)
 
     history = _load_manifest()
+    _backfill_manifest(args.ohlcv_dir, membership, history)
+    history = _load_manifest()  # reload after backfill
     chart_png = _make_chart(history, membership)
 
     to_addr = os.environ["RDD_EMAIL_TO"]
