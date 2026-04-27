@@ -19,7 +19,7 @@ LOG_FILE="$LOG_DIR/daily_ingest.log"
 DRY_RUN=false
 CRON_BRANCH="main"
 
-export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
+export PATH="/Users/Paul_Mora/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
 
 if [[ "${1:-}" == "--dry-run" ]]; then
   DRY_RUN=true
