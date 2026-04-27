@@ -25,11 +25,13 @@ from tests.conftest import make_price_ohlcv
 # Shared helpers
 # ---------------------------------------------------------------------------
 
-_UPTREND = [100.0 + i * 0.5 for i in range(260)]   # 260 days, steadily rising
+_UPTREND = [100.0 + i * 0.5 for i in range(260)]  # 260 days, steadily rising
 _DOWNTREND = [230.0 - i * 0.5 for i in range(260)]  # 260 days, steadily falling
 
 
-def _ohlcv(df: pd.DataFrame, key: str = "aapl") -> dict[str, Callable[[], pd.DataFrame]]:
+def _ohlcv(
+    df: pd.DataFrame, key: str = "aapl"
+) -> dict[str, Callable[[], pd.DataFrame]]:
     return {key: lambda _df=df: _df}
 
 
@@ -150,7 +152,9 @@ class TestComputeMeanReversionSignals:
     def test_declining_prices_are_oversold_bullish(self, params) -> None:
         # Pure decline → RSI ≈ 0 (< 30) → bullish
         prices = [200.0 - i * 2.0 for i in range(30)]
-        result = compute_mean_reversion_signals(_ohlcv(make_price_ohlcv(prices)), params)
+        result = compute_mean_reversion_signals(
+            _ohlcv(make_price_ohlcv(prices)), params
+        )
 
         assert result["aapl"].direction == "bullish"
         assert result["aapl"].metrics[f"rsi_{params['rsi_window']}"] < 30
@@ -158,33 +162,43 @@ class TestComputeMeanReversionSignals:
     def test_rising_prices_are_overbought_bearish(self, params) -> None:
         # Pure rise → RSI ≈ 100 (> 70) → bearish
         prices = [100.0 + i * 2.0 for i in range(30)]
-        result = compute_mean_reversion_signals(_ohlcv(make_price_ohlcv(prices)), params)
+        result = compute_mean_reversion_signals(
+            _ohlcv(make_price_ohlcv(prices)), params
+        )
 
         assert result["aapl"].direction == "bearish"
         assert result["aapl"].metrics[f"rsi_{params['rsi_window']}"] > 70
 
     def test_alternating_prices_are_neutral(self, params) -> None:
         # Equal up/down moves → RSI ≈ 50 → neutral
-        prices = [100.0 + (1.0 if i % 2 == 0 else -1.0) * (i // 2 + 1) for i in range(30)]
+        prices = [
+            100.0 + (1.0 if i % 2 == 0 else -1.0) * (i // 2 + 1) for i in range(30)
+        ]
         # Simpler: fixed alternating deltas from a constant base
         base = 100.0
         prices = []
         for i in range(30):
             base += 1.0 if i % 2 == 0 else -1.0
             prices.append(base)
-        result = compute_mean_reversion_signals(_ohlcv(make_price_ohlcv(prices)), params)
+        result = compute_mean_reversion_signals(
+            _ohlcv(make_price_ohlcv(prices)), params
+        )
 
         assert result["aapl"].direction == "neutral"
 
     def test_insufficient_data_ticker_is_skipped(self, params) -> None:
         prices = [100.0 + i for i in range(5)]
-        result = compute_mean_reversion_signals(_ohlcv(make_price_ohlcv(prices)), params)
+        result = compute_mean_reversion_signals(
+            _ohlcv(make_price_ohlcv(prices)), params
+        )
 
         assert "aapl" not in result
 
     def test_metrics_contain_bb_and_rsi(self, params) -> None:
         prices = [200.0 - i * 2.0 for i in range(30)]
-        result = compute_mean_reversion_signals(_ohlcv(make_price_ohlcv(prices)), params)
+        result = compute_mean_reversion_signals(
+            _ohlcv(make_price_ohlcv(prices)), params
+        )
         metrics = result["aapl"].metrics
 
         assert f"rsi_{params['rsi_window']}" in metrics
@@ -194,7 +208,9 @@ class TestComputeMeanReversionSignals:
 
     def test_bb_position_within_zero_one(self, params) -> None:
         prices = [100.0 + i * 0.1 for i in range(30)]
-        result = compute_mean_reversion_signals(_ohlcv(make_price_ohlcv(prices)), params)
+        result = compute_mean_reversion_signals(
+            _ohlcv(make_price_ohlcv(prices)), params
+        )
 
         bb_pos = result["aapl"].metrics["bb_position"]
         assert 0.0 <= bb_pos <= 1.0

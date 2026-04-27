@@ -162,7 +162,9 @@ def compute_mean_reversion_signals(
         bb_lower = ma - bb_std * std
         price = float(prices.iloc[-1])
         band_width = bb_upper - bb_lower
-        bb_position = round((price - bb_lower) / band_width, 2) if band_width > 0 else 0.5
+        bb_position = (
+            round((price - bb_lower) / band_width, 2) if band_width > 0 else 0.5
+        )
 
         metrics: dict[str, Any] = {
             f"rsi_{rsi_window}": round(rsi, 1),
