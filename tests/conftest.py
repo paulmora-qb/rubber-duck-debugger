@@ -86,3 +86,28 @@ def make_company_news_df(
 def company_news_df() -> pd.DataFrame:
     """Three-row company news DataFrame that satisfies CompanyNewsSchema (AAPL)."""
     return make_company_news_df()
+
+
+def make_price_ohlcv(
+    prices: list[float],
+    ticker: str = "AAPL",
+    start: str = "2024-01-02",
+) -> pd.DataFrame:
+    """Return an OHLCV DataFrame driven by an explicit *prices* list.
+
+    Suitable for strategy tests that need controlled price trajectories (trends,
+    RSI scenarios) without going through the Pandera example generator.
+    """
+    n = len(prices)
+    return pd.DataFrame(
+        {
+            "ticker": [ticker] * n,
+            "date": pd.date_range(start, periods=n, freq="B"),
+            "adj_close": prices,
+            "close": prices,
+            "open": [p * 1.005 for p in prices],
+            "high": [p * 1.01 for p in prices],
+            "low": [p * 0.99 for p in prices],
+            "volume": [1_000_000.0] * n,
+        }
+    )
