@@ -3,7 +3,9 @@
 from collections.abc import Callable
 from typing import Any
 
+import numpy as np
 import pandas as pd
+from arch import arch_model
 
 from rdd.pipelines.strategies.models import StockAnalysis, StrategySignal
 
@@ -187,10 +189,83 @@ def compute_mean_reversion_signals(
     return signals
 
 
+def compute_volatility_signals(
+    ohlcv: dict[str, Callable[[], pd.DataFrame]],
+    params: dict[str, Any],
+) -> dict[str, StrategySignal]:
+    """Fit a GARCH(1,1) model on log returns to estimate conditional volatility.
+
+    Produces a regime descriptor — not a directional bet. Direction is:
+    - ``"bearish"`` when current vol is elevated vs. long-run (vol_ratio > high threshold)
+    - ``"bullish"`` when vol is compressed vs. long-run (vol_ratio < low threshold)
+    - ``"neutral"`` otherwise
+
+    Args:
+        ohlcv: Partitioned OHLCV dataset, keyed by lowercase ticker symbol.
+        params: Strategy parameters (see ``params_strategies.yml``).
+
+    Returns:
+        Mapping of ticker key to volatility ``StrategySignal``.
+    """
+    min_obs: int = params.get("garch_min_obs", 252)
+    vol_high: float = params.get("garch_vol_ratio_high", 1.5)
+    vol_low: float = params.get("garch_vol_ratio_low", 0.75)
+    signals: dict[str, StrategySignal] = {}
+
+    for ticker_key, loader in ohlcv.items():
+        df = loader().sort_values("date")
+        prices = df["adj_close"].dropna()
+        if len(prices) < min_obs + 1:
+            continue
+
+        log_returns = np.log(prices / prices.shift(1)).dropna() * 100
+
+        try:
+            res = arch_model(log_returns, vol="Garch", p=1, q=1, rescale=False).fit(
+                disp="off"
+            )
+        except Exception:
+            continue
+
+        # Conditional vol for today (annualised %)
+        current_vol = float(np.sqrt(res.conditional_volatility.iloc[-1] ** 2 * 252))
+        # Long-run unconditional vol: omega / (1 - alpha - beta), annualised
+        omega = float(res.params["omega"])
+        alpha = float(res.params["alpha[1]"])
+        beta = float(res.params["beta[1]"])
+        persistence = round(alpha + beta, 4)
+        denom = 1 - alpha - beta
+        if denom <= 0:
+            continue
+        long_run_vol = float(np.sqrt(omega / denom * 252))
+        vol_ratio = round(current_vol / long_run_vol, 4) if long_run_vol > 0 else 1.0
+
+        if vol_ratio > vol_high:
+            direction = "bearish"
+        elif vol_ratio < vol_low:
+            direction = "bullish"
+        else:
+            direction = "neutral"
+
+        signals[ticker_key] = StrategySignal(
+            strategy="volatility",
+            direction=direction,
+            metrics={
+                "current_vol_ann": round(current_vol, 4),
+                "long_run_vol_ann": round(long_run_vol, 4),
+                "vol_ratio": vol_ratio,
+                "persistence": persistence,
+            },
+        )
+
+    return signals
+
+
 def assemble_stock_analyses(
     momentum: dict[str, StrategySignal],
     trend: dict[str, StrategySignal],
     mean_reversion: dict[str, StrategySignal],
+    volatility: dict[str, StrategySignal],
 ) -> dict[str, dict[str, Any]]:
     """Combine per-strategy signals into one ``StockAnalysis`` per ticker.
 
@@ -198,18 +273,19 @@ def assemble_stock_analyses(
         momentum: Momentum signals keyed by lowercase ticker.
         trend: Trend signals keyed by lowercase ticker.
         mean_reversion: Mean-reversion signals keyed by lowercase ticker.
+        volatility: GARCH volatility signals keyed by lowercase ticker.
 
     Returns:
         Mapping of lowercase ticker to serialised ``StockAnalysis`` dict,
         ready for JSON persistence.
     """
-    all_tickers = set(momentum) | set(trend) | set(mean_reversion)
+    all_tickers = set(momentum) | set(trend) | set(mean_reversion) | set(volatility)
     result: dict[str, dict[str, Any]] = {}
 
     for ticker_key in sorted(all_tickers):
         signals = [
             sig
-            for sig_map in (momentum, trend, mean_reversion)
+            for sig_map in (momentum, trend, mean_reversion, volatility)
             if (sig := sig_map.get(ticker_key)) is not None
         ]
         analysis = StockAnalysis(ticker=ticker_key.upper(), signals=signals)

@@ -8,6 +8,9 @@ trend_signals:
 mean_reversion_signals:
   type: MemoryDataset
 
+volatility_signals:
+  type: MemoryDataset
+
 # Final output: one JSON object per ticker, consumed by the agent debate system.
 stock_analyses:
   type: kedro_datasets.json.JSONDataset

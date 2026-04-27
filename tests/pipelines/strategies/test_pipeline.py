@@ -36,6 +36,9 @@ def params() -> dict:
         "rsi_overbought": 70.0,
         "bb_window": 20,
         "bb_std": 2.0,
+        "garch_min_obs": 252,
+        "garch_vol_ratio_high": 1.5,
+        "garch_vol_ratio_low": 0.75,
     }
 
 
@@ -56,6 +59,7 @@ def catalog(params) -> DataCatalog:
             "momentum_signals": MemoryDataset(),
             "trend_signals": MemoryDataset(),
             "mean_reversion_signals": MemoryDataset(),
+            "volatility_signals": MemoryDataset(),
             "stock_analyses": MemoryDataset(),
         }
     )
@@ -93,13 +97,13 @@ def test_pipeline_output_structure(pipeline, catalog) -> None:
             assert signal["direction"] in {"bullish", "bearish", "neutral"}
 
 
-def test_pipeline_emits_all_three_strategies(pipeline, catalog) -> None:
+def test_pipeline_emits_all_four_strategies(pipeline, catalog) -> None:
     SequentialRunner().run(pipeline, catalog)
 
     result = catalog.load("stock_analyses")
     for entry in result.values():
         strategies = {s["strategy"] for s in entry["signals"]}
-        assert strategies == {"momentum", "trend", "mean_reversion"}
+        assert strategies == {"momentum", "trend", "mean_reversion", "volatility"}
 
 
 def test_pipeline_ticker_is_uppercase(pipeline, catalog) -> None:
@@ -127,6 +131,7 @@ def test_pipeline_skips_tickers_with_insufficient_data(pipeline, params) -> None
             "momentum_signals": MemoryDataset(),
             "trend_signals": MemoryDataset(),
             "mean_reversion_signals": MemoryDataset(),
+            "volatility_signals": MemoryDataset(),
             "stock_analyses": MemoryDataset(),
         }
     )

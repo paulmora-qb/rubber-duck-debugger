@@ -20,3 +20,8 @@ strategies:
   # Mean reversion: Bollinger Band settings
   bb_window: 20
   bb_std: 2.0
+
+  # Volatility: GARCH(1,1) settings
+  garch_min_obs: 252          # minimum trading days required to fit the model
+  garch_vol_ratio_high: 1.5   # current/long-run vol ratio above which = bearish regime
+  garch_vol_ratio_low: 0.75   # current/long-run vol ratio below which = bullish regime
