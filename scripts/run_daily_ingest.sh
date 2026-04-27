@@ -101,7 +101,9 @@ main() {
   fi
 
   log "=== daily ingest start ==="
-  sync_branch
+  if ! $DRY_RUN; then
+    sync_branch
+  fi
 
   run_pipeline data_ingestion
 

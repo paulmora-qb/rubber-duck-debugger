@@ -6,8 +6,11 @@ import pandas as pd
 import pandera.pandas as pa
 import pytest
 
-from rdd.schemas.ohlcv import MIN_TICKER_COVERAGE, OHLCVSchema, check_ohlcv_universe_coverage
-
+from rdd.schemas.ohlcv import (
+    MIN_TICKER_COVERAGE,
+    OHLCVSchema,
+    check_ohlcv_universe_coverage,
+)
 
 # ---------------------------------------------------------------------------
 # Helpers
