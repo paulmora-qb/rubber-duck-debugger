@@ -16,47 +16,115 @@ import os
 import smtplib
 import ssl
 import sys
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from pathlib import Path
 
 import matplotlib
-import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
-import numpy as np
 
 matplotlib.use("Agg")
 
 _LOG_TAIL = 50
-_MANIFEST = Path(__file__).parent.parent / "logs" / "run_manifest.jsonl"
+_LOGS_DIR = Path(__file__).parent.parent / "logs"
+_MANIFEST = _LOGS_DIR / "run_manifest.jsonl"
+_MEMBERSHIP_CACHE = _LOGS_DIR / "ticker_membership.json"
+_MEMBERSHIP_TTL_DAYS = 7
 _HISTORY_DAYS = 30
 
 
-def _tail(path: str, n: int = _LOG_TAIL) -> str:
-    """Return the last n lines of a log file."""
-    p = Path(path)
-    if not p.exists():
-        return "(log file not found)"
-    lines = p.read_text().splitlines()
-    return "\n".join(lines[-n:]) if lines else "(empty log)"
+# ---------------------------------------------------------------------------
+# Ticker index membership (S&P 500 / NASDAQ 100), cached locally
+# ---------------------------------------------------------------------------
 
 
-def _count_tickers_fetched(ohlcv_dir: str | None) -> tuple[int, int]:
-    """Count parquets modified today vs total — proxy for today's fetch coverage."""
+def _fetch_membership() -> dict[str, list[str]]:
+    """Fetch S&P 500 and NASDAQ 100 tickers from the same sources as the pipeline."""
+    import io as _io
+
+    import pandas as pd
+    import requests
+
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
+        )
+    }
+
+    def _get(url: str, **kwargs: object) -> list[pd.DataFrame]:
+        resp = requests.get(url, headers=headers, timeout=30)
+        resp.raise_for_status()
+        return pd.read_html(_io.StringIO(resp.text), **kwargs)
+
+    def _normalise(t: str) -> str:
+        return t.replace(".", "-")
+
+    sp500: list[str] = (
+        _get("https://en.wikipedia.org/wiki/List_of_S%26P_500_companies", attrs={"id": "constituents"})[0]["Symbol"]
+        .map(_normalise)
+        .tolist()
+    )
+
+    ndx100: list[str] = []
+    for tbl in _get("https://en.wikipedia.org/wiki/Nasdaq-100"):
+        if "Ticker" in tbl.columns:
+            ndx100 = tbl["Ticker"].map(_normalise).tolist()
+            break
+
+    return {"sp500": sorted(sp500), "nasdaq100": sorted(ndx100)}
+
+
+def _load_membership() -> dict[str, set[str]]:
+    """Return {index_name: set(tickers)}, refreshing the cache if stale."""
+    if _MEMBERSHIP_CACHE.exists():
+        age_days = (datetime.now() - datetime.fromtimestamp(_MEMBERSHIP_CACHE.stat().st_mtime)).days
+        if age_days < _MEMBERSHIP_TTL_DAYS:
+            data = json.loads(_MEMBERSHIP_CACHE.read_text())
+            return {k: set(v) for k, v in data.items()}
+
+    _LOGS_DIR.mkdir(parents=True, exist_ok=True)
+    data = _fetch_membership()
+    _MEMBERSHIP_CACHE.write_text(json.dumps(data))
+    return {k: set(v) for k, v in data.items()}
+
+
+# ---------------------------------------------------------------------------
+# Per-run stock counts
+# ---------------------------------------------------------------------------
+
+
+def _count_by_index(
+    ohlcv_dir: str | None, membership: dict[str, set[str]]
+) -> dict[str, int]:
+    """Count parquets modified today, broken down by index membership."""
+    counts: dict[str, int] = {"sp500": 0, "nasdaq100": 0, "total": 0}
     if not ohlcv_dir:
-        return 0, 0
+        return counts
     p = Path(ohlcv_dir)
     if not p.exists():
-        return 0, 0
-    files = list(p.glob("*.parquet"))
+        return counts
     today = date.today()
-    n_fetched = sum(1 for f in files if date.fromtimestamp(f.stat().st_mtime) == today)
-    return n_fetched, len(files)
+    for f in p.glob("*.parquet"):
+        if date.fromtimestamp(f.stat().st_mtime) != today:
+            continue
+        ticker = f.stem.upper()
+        counts["total"] += 1
+        if ticker in membership.get("sp500", set()):
+            counts["sp500"] += 1
+        if ticker in membership.get("nasdaq100", set()):
+            counts["nasdaq100"] += 1
+    return counts
 
 
-def _append_manifest(run_date: date, n_fetched: int, n_total: int, status: str) -> None:
+# ---------------------------------------------------------------------------
+# Run manifest
+# ---------------------------------------------------------------------------
+
+
+def _append_manifest(run_date: date, counts: dict[str, int], status: str) -> None:
     """Append a run record to the JSONL manifest."""
     _MANIFEST.parent.mkdir(parents=True, exist_ok=True)
     with _MANIFEST.open("a") as fh:
@@ -64,8 +132,9 @@ def _append_manifest(run_date: date, n_fetched: int, n_total: int, status: str) 
             json.dumps(
                 {
                     "date": run_date.isoformat(),
-                    "n_fetched": n_fetched,
-                    "n_total": n_total,
+                    "n_sp500": counts["sp500"],
+                    "n_nasdaq100": counts["nasdaq100"],
+                    "n_total": counts["total"],
                     "status": status,
                 }
             )
@@ -74,7 +143,7 @@ def _append_manifest(run_date: date, n_fetched: int, n_total: int, status: str) 
 
 
 def _load_manifest(days: int = _HISTORY_DAYS) -> dict[date, dict]:
-    """Return {date: record} for the last N days from the JSONL manifest."""
+    """Return {date: record} for the last N days."""
     if not _MANIFEST.exists():
         return {}
     cutoff = date.today() - timedelta(days=days)
@@ -92,70 +161,61 @@ def _load_manifest(days: int = _HISTORY_DAYS) -> dict[date, dict]:
     return records
 
 
-def _make_heatmap(history: dict[date, dict]) -> bytes:
-    """Render a GitHub-style calendar heatmap and return PNG bytes."""
+# ---------------------------------------------------------------------------
+# Chart
+# ---------------------------------------------------------------------------
+
+
+def _make_chart(history: dict[date, dict], membership: dict[str, set[str]]) -> bytes:
+    """Render a dual-line chart (S&P 500 vs NASDAQ 100 stocks fetched) as PNG bytes."""
     today = date.today()
-    start = today - timedelta(days=_HISTORY_DAYS - 1)
-    dates = [start + timedelta(days=i) for i in range(_HISTORY_DAYS)]
+    dates = sorted(d for d in history if d <= today)
 
-    n_weeks = (len(dates) + 6) // 7 + 1
-    cmap = plt.colormaps["RdYlGn"]
+    sp500_counts = [history[d].get("n_sp500", 0) for d in dates]
+    ndx100_counts = [history[d].get("n_nasdaq100", 0) for d in dates]
 
-    fig, ax = plt.subplots(figsize=(12, 3))
-    seen_months: set[int] = set()
+    sp500_expected = len(membership.get("sp500", set()))
+    ndx100_expected = len(membership.get("nasdaq100", set()))
 
-    for d in dates:
-        col = (d - start).days // 7
-        row = d.weekday()  # 0=Mon … 6=Sun
-        rec = history.get(d)
+    fig, ax = plt.subplots(figsize=(10, 4))
 
-        if rec and rec.get("n_total", 0) > 0:
-            pct = rec["n_fetched"] / rec["n_total"]
-            color = cmap(pct)
-            label = f"{int(pct * 100)}%"
-        elif d.weekday() < 5:
-            color = "#d0d0d0"  # weekday with no run (laptop off)
-            label = ""
-        else:
-            color = "#f5f5f5"  # weekend
-            label = ""
+    if dates:
+        ax.plot(dates, sp500_counts, color="#1f77b4", marker="o", markersize=4, label="S&P 500")
+        ax.plot(dates, ndx100_counts, color="#ff7f0e", marker="s", markersize=4, label="NASDAQ 100")
 
-        rect = mpatches.FancyBboxPatch(
-            (col + 0.05, 6 - row + 0.05),
-            0.9,
-            0.9,
-            boxstyle="round,pad=0.05",
-            linewidth=0,
-            facecolor=color,
-        )
-        ax.add_patch(rect)
-        if label:
-            ax.text(col + 0.5, 6 - row + 0.5, label, ha="center", va="center", fontsize=6)
+    if sp500_expected:
+        ax.axhline(sp500_expected, color="#1f77b4", linestyle="--", linewidth=0.8, alpha=0.6,
+                   label=f"S&P 500 universe ({sp500_expected})")
+    if ndx100_expected:
+        ax.axhline(ndx100_expected, color="#ff7f0e", linestyle="--", linewidth=0.8, alpha=0.6,
+                   label=f"NASDAQ 100 universe ({ndx100_expected})")
 
-        if d.month not in seen_months:
-            ax.text(col + 0.5, 7.4, d.strftime("%b"), ha="center", fontsize=7)
-            seen_months.add(d.month)
-
-    for i, name in enumerate(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]):
-        ax.text(-0.5, 6 - i + 0.5, name, ha="right", va="center", fontsize=7)
-
-    ax.set_xlim(-1, n_weeks)
-    ax.set_ylim(0, 8)
-    ax.axis("off")
-    ax.set_title(f"OHLCV ingest coverage — last {_HISTORY_DAYS} days", fontsize=9, pad=4)
-
-    legend_items = [
-        mpatches.Patch(color=cmap(1.0), label="100%"),
-        mpatches.Patch(color=cmap(0.5), label="~50%"),
-        mpatches.Patch(color=cmap(0.0), label="<10%"),
-        mpatches.Patch(color="#d0d0d0", label="missed"),
-    ]
-    ax.legend(handles=legend_items, loc="lower right", fontsize=6, ncol=4, framealpha=0.7)
+    ax.set_title(f"Stocks fetched per run — last {_HISTORY_DAYS} days", fontsize=10)
+    ax.set_ylabel("Stocks fetched")
+    ax.set_xlabel("Run date")
+    ax.legend(fontsize=8, loc="lower right")
+    ax.grid(axis="y", linestyle="--", alpha=0.4)
+    ax.tick_params(axis="x", labelrotation=30, labelsize=7)
+    fig.tight_layout()
 
     buf = io.BytesIO()
     fig.savefig(buf, format="png", bbox_inches="tight", dpi=120)
     plt.close(fig)
     return buf.getvalue()
+
+
+# ---------------------------------------------------------------------------
+# Email
+# ---------------------------------------------------------------------------
+
+
+def _tail(path: str, n: int = _LOG_TAIL) -> str:
+    """Return the last n lines of a log file."""
+    p = Path(path)
+    if not p.exists():
+        return "(log file not found)"
+    lines = p.read_text().splitlines()
+    return "\n".join(lines[-n:]) if lines else "(empty log)"
 
 
 def _subject(results: dict[str, str]) -> str:
@@ -169,8 +229,7 @@ def _subject(results: dict[str, str]) -> str:
 def _html_body(
     results: dict[str, str],
     log_paths: dict[str, str],
-    n_fetched: int,
-    n_total: int,
+    counts: dict[str, int],
 ) -> str:
     """Build the HTML email body."""
     icons = {"ok": "✓", "skip": "—", "fail": "✗"}
@@ -178,8 +237,11 @@ def _html_body(
         f"<tr><td>{icons.get(s, '?')}</td><td><b>{p}</b></td><td>{s.upper()}</td></tr>"
         for p, s in results.items()
     )
+    n_total = counts.get("total", 0)
+    n_sp500 = counts.get("sp500", 0)
+    n_ndx100 = counts.get("nasdaq100", 0)
     coverage = (
-        f"{n_fetched} / {n_total} stocks ({int(n_fetched / n_total * 100)}%)"
+        f"{n_total} stocks &nbsp;|&nbsp; S&amp;P 500: {n_sp500} &nbsp;|&nbsp; NASDAQ 100: {n_ndx100}"
         if n_total
         else "—"
     )
@@ -195,11 +257,16 @@ def _html_body(
   <tr style="background:#f0f0f0"><th>Status</th><th>Pipeline</th><th>Result</th></tr>
   {rows}
 </table>
-<p><b>Stocks fetched today:</b> {coverage}</p>
-<p><img src="cid:heatmap" alt="Coverage heatmap" style="max-width:820px"/></p>
+<p><b>Fetched today:</b> {coverage}</p>
+<p><img src="cid:chart" alt="Stocks fetched per run" style="max-width:820px"/></p>
 {log_sections}
 </body></html>
 """
+
+
+# ---------------------------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------------------------
 
 
 def main() -> None:
@@ -219,12 +286,13 @@ def main() -> None:
         results[name] = status
         log_paths[name] = log_path
 
-    n_fetched, n_total = _count_tickers_fetched(args.ohlcv_dir)
+    membership = _load_membership()
+    counts = _count_by_index(args.ohlcv_dir, membership)
     overall = "fail" if any(s == "fail" for s in results.values()) else "ok"
-    _append_manifest(date.today(), n_fetched, n_total, overall)
+    _append_manifest(date.today(), counts, overall)
 
     history = _load_manifest()
-    heatmap_png = _make_heatmap(history)
+    chart_png = _make_chart(history, membership)
 
     to_addr = os.environ["RDD_EMAIL_TO"]
     smtp_host = os.environ.get("RDD_SMTP_HOST", "smtp.gmail.com")
@@ -238,12 +306,12 @@ def main() -> None:
     msg["To"] = to_addr
 
     alt = MIMEMultipart("alternative")
-    alt.attach(MIMEText(_html_body(results, log_paths, n_fetched, n_total), "html"))
+    alt.attach(MIMEText(_html_body(results, log_paths, counts), "html"))
     msg.attach(alt)
 
-    img = MIMEImage(heatmap_png)
-    img.add_header("Content-ID", "<heatmap>")
-    img.add_header("Content-Disposition", "inline", filename="heatmap.png")
+    img = MIMEImage(chart_png)
+    img.add_header("Content-ID", "<chart>")
+    img.add_header("Content-Disposition", "inline", filename="chart.png")
     msg.attach(img)
 
     ctx = ssl.create_default_context()
