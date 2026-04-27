@@ -122,6 +122,7 @@ main() {
   run_pipeline data_ingestion
   run_pipeline company_info
   run_pipeline company_news
+  run_pipeline company_financials
   backfill_news
 
   if ! $DRY_RUN; then
