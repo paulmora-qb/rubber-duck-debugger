@@ -7,6 +7,23 @@ import pandera.pandas as pa
 from pandera.pandas import DataFrameModel
 from pandera.typing import Series
 
+# Minimum distinct tickers expected in the combined OHLCV output (~90% of S&P500+NDX100).
+MIN_TICKER_COVERAGE = 450
+
+
+def check_ohlcv_universe_coverage(df: pd.DataFrame) -> None:
+    """Raise SchemaError if the combined OHLCV DataFrame has too few distinct tickers.
+
+    Call on the full concatenated output, not on individual per-ticker DataFrames.
+    """
+    n = df["ticker"].nunique()
+    if n < MIN_TICKER_COVERAGE:
+        raise pa.errors.SchemaError(
+            schema=OHLCVSchema.to_schema(),
+            data=df,
+            message=f"Ticker coverage too low: expected >= {MIN_TICKER_COVERAGE}, got {n}",
+        )
+
 
 class OHLCVSchema(DataFrameModel):
     """Schema for daily OHLCV bars stored per ticker.
