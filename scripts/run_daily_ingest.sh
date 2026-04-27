@@ -104,8 +104,6 @@ main() {
   sync_branch
 
   run_pipeline data_ingestion
-  run_pipeline finnhub_news
-  run_pipeline newsapi_news
 
   if ! $DRY_RUN; then
     send_report
