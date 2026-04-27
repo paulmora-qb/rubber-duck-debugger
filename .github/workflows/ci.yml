@@ -19,11 +19,11 @@ jobs:
       - uses: astral-sh/ruff-action@v3
         name: Run the ruff linter
         with:
-          version: "0.11.7"
+          version: "0.15.11"
       - uses: astral-sh/ruff-action@v3
         name: Run the ruff formatter check
         with:
-          version: "0.11.7"
+          version: "0.15.11"
           args: "format --check --diff"
 
   pytest:
