@@ -6,7 +6,31 @@ import pandas as pd
 import pandera.pandas as pa
 import pytest
 
-from rdd.schemas.ohlcv import OHLCVSchema
+from rdd.schemas.ohlcv import MIN_TICKER_COVERAGE, OHLCVSchema, check_ohlcv_universe_coverage
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+
+def _make_combined_df(n_tickers: int) -> pd.DataFrame:
+    """Combined OHLCV DataFrame with n_tickers distinct tickers, one row each."""
+    return pd.DataFrame(
+        [
+            {
+                "ticker": f"T{i:04d}",
+                "date": pd.Timestamp("2024-01-02"),
+                "open": 100.0,
+                "high": 101.0,
+                "low": 99.0,
+                "close": 100.0,
+                "adj_close": 98.0,
+                "volume": 1_000_000.0,
+            }
+            for i in range(n_tickers)
+        ]
+    )
 
 
 def test_valid_data_passes(ohlcv_df: pd.DataFrame) -> None:
@@ -59,3 +83,19 @@ def test_schema_fields_have_descriptions() -> None:
     schema = OHLCVSchema.to_schema()
     for col_name, col in schema.columns.items():
         assert col.description, f"Column '{col_name}' is missing a description"
+
+
+# ---------------------------------------------------------------------------
+# Universe coverage check
+# ---------------------------------------------------------------------------
+
+
+def test_universe_coverage_passes() -> None:
+    df = _make_combined_df(MIN_TICKER_COVERAGE + 10)
+    check_ohlcv_universe_coverage(df)
+
+
+def test_universe_coverage_fails() -> None:
+    df = _make_combined_df(MIN_TICKER_COVERAGE - 1)
+    with pytest.raises(pa.errors.SchemaError):
+        check_ohlcv_universe_coverage(df)
