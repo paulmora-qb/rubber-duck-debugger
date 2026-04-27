@@ -1,5 +1,6 @@
 ticker_universe:
-  type: MemoryDataset
+  type: kedro_datasets.json.JSONDataset
+  filepath: ${globals:data_dir}raw/ticker_universe.json
 
 # Read-side: existing stored data fed into the ingest node as lazy loaders.
 # Uses NullablePartitionedDataset so the first run (empty dir) returns {} gracefully.
