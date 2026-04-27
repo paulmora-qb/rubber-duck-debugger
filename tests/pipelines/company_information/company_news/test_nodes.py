@@ -11,7 +11,10 @@ from collections.abc import Callable
 import pandas as pd
 import pytest
 
-from rdd.pipelines.company_news.nodes import _articles_to_df, ingest_company_news
+from rdd.pipelines.company_information.company_news.nodes import (
+    _articles_to_df,
+    ingest_company_news,
+)
 
 
 def _make_articles(ticker: str, n: int = 3, base_ts: int | None = None) -> list[dict]:
@@ -84,7 +87,8 @@ class TestIngestCompanyNews:
         mock_client = mocker.MagicMock()
         mock_client.company_news.return_value = articles
         mocker.patch(
-            "rdd.pipelines.company_news.nodes.finnhub.Client", return_value=mock_client
+            "rdd.pipelines.company_information.company_news.nodes.finnhub.Client",
+            return_value=mock_client,
         )
 
         result = ingest_company_news(["AAPL"], {}, base_params)
@@ -109,7 +113,8 @@ class TestIngestCompanyNews:
         mock_client = mocker.MagicMock()
         mock_client.company_news.return_value = new_articles
         mocker.patch(
-            "rdd.pipelines.company_news.nodes.finnhub.Client", return_value=mock_client
+            "rdd.pipelines.company_information.company_news.nodes.finnhub.Client",
+            return_value=mock_client,
         )
 
         result = ingest_company_news([ticker], existing, base_params)
@@ -137,7 +142,8 @@ class TestIngestCompanyNews:
         }
         mock_client = mocker.MagicMock()
         mocker.patch(
-            "rdd.pipelines.company_news.nodes.finnhub.Client", return_value=mock_client
+            "rdd.pipelines.company_information.company_news.nodes.finnhub.Client",
+            return_value=mock_client,
         )
 
         ingest_company_news([ticker], existing, base_params)
@@ -148,7 +154,8 @@ class TestIngestCompanyNews:
         mock_client = mocker.MagicMock()
         mock_client.company_news.side_effect = RuntimeError("API error")
         mocker.patch(
-            "rdd.pipelines.company_news.nodes.finnhub.Client", return_value=mock_client
+            "rdd.pipelines.company_information.company_news.nodes.finnhub.Client",
+            return_value=mock_client,
         )
 
         result = ingest_company_news(["AAPL"], {}, base_params)
@@ -168,7 +175,8 @@ class TestIngestCompanyNews:
         mock_client = mocker.MagicMock()
         mock_client.company_news.side_effect = RuntimeError("API error")
         mocker.patch(
-            "rdd.pipelines.company_news.nodes.finnhub.Client", return_value=mock_client
+            "rdd.pipelines.company_information.company_news.nodes.finnhub.Client",
+            return_value=mock_client,
         )
 
         result = ingest_company_news([ticker], existing, base_params)
@@ -200,7 +208,8 @@ class TestIngestCompanyNews:
         mock_client = mocker.MagicMock()
         mock_client.company_news.return_value = duplicate_articles
         mocker.patch(
-            "rdd.pipelines.company_news.nodes.finnhub.Client", return_value=mock_client
+            "rdd.pipelines.company_information.company_news.nodes.finnhub.Client",
+            return_value=mock_client,
         )
 
         result = ingest_company_news([ticker], existing, base_params)

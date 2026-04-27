@@ -13,7 +13,7 @@ import pytest
 from kedro.io import DataCatalog, MemoryDataset
 from kedro.runner import SequentialRunner
 
-from rdd.pipelines.company_info.pipeline import create_pipeline
+from rdd.pipelines.company_information.company_info.pipeline import create_pipeline
 
 _SAMPLE_INFO: dict = {
     "longName": "Apple Inc.",
@@ -52,7 +52,10 @@ def in_memory_catalog(params):
 def test_pipeline_runs_successfully(mocker, pipeline, in_memory_catalog) -> None:
     mock_ticker = MagicMock()
     mock_ticker.info = _SAMPLE_INFO
-    mocker.patch("rdd.pipelines.company_info.nodes.yf.Ticker", return_value=mock_ticker)
+    mocker.patch(
+        "rdd.pipelines.company_information.company_info.nodes.yf.Ticker",
+        return_value=mock_ticker,
+    )
 
     SequentialRunner().run(pipeline, in_memory_catalog)
 
@@ -64,7 +67,10 @@ def test_pipeline_runs_successfully(mocker, pipeline, in_memory_catalog) -> None
 def test_pipeline_output_schema(mocker, pipeline, in_memory_catalog) -> None:
     mock_ticker = MagicMock()
     mock_ticker.info = _SAMPLE_INFO
-    mocker.patch("rdd.pipelines.company_info.nodes.yf.Ticker", return_value=mock_ticker)
+    mocker.patch(
+        "rdd.pipelines.company_information.company_info.nodes.yf.Ticker",
+        return_value=mock_ticker,
+    )
 
     SequentialRunner().run(pipeline, in_memory_catalog)
 
@@ -103,7 +109,9 @@ def test_pipeline_skips_fresh_snapshots(
             "params:company_info": MemoryDataset(data=params),
         }
     )
-    yf_spy = mocker.patch("rdd.pipelines.company_info.nodes.yf.Ticker")
+    yf_spy = mocker.patch(
+        "rdd.pipelines.company_information.company_info.nodes.yf.Ticker"
+    )
 
     SequentialRunner().run(pipeline, catalog)
 

@@ -12,7 +12,10 @@ from unittest.mock import MagicMock
 import pandas as pd
 import pytest
 
-from rdd.pipelines.company_info.nodes import _extract_info, ingest_company_info
+from rdd.pipelines.company_information.company_info.nodes import (
+    _extract_info,
+    ingest_company_info,
+)
 
 _SAMPLE_INFO: dict = {
     "longName": "Apple Inc.",
@@ -59,7 +62,8 @@ class TestIngestCompanyInfo:
         mock_ticker = MagicMock()
         mock_ticker.info = _SAMPLE_INFO
         mocker.patch(
-            "rdd.pipelines.company_info.nodes.yf.Ticker", return_value=mock_ticker
+            "rdd.pipelines.company_information.company_info.nodes.yf.Ticker",
+            return_value=mock_ticker,
         )
 
         result = ingest_company_info(["AAPL", "MSFT"], {}, base_params)
@@ -79,7 +83,9 @@ class TestIngestCompanyInfo:
         existing: dict[str, Callable[[], pd.DataFrame]] = {
             ticker.lower(): lambda: fresh_df
         }
-        yf_spy = mocker.patch("rdd.pipelines.company_info.nodes.yf.Ticker")
+        yf_spy = mocker.patch(
+            "rdd.pipelines.company_information.company_info.nodes.yf.Ticker"
+        )
 
         result = ingest_company_info([ticker], existing, base_params)
 
@@ -99,7 +105,8 @@ class TestIngestCompanyInfo:
         mock_ticker = MagicMock()
         mock_ticker.info = _SAMPLE_INFO
         mocker.patch(
-            "rdd.pipelines.company_info.nodes.yf.Ticker", return_value=mock_ticker
+            "rdd.pipelines.company_information.company_info.nodes.yf.Ticker",
+            return_value=mock_ticker,
         )
 
         result = ingest_company_info([ticker], existing, base_params)
@@ -108,7 +115,7 @@ class TestIngestCompanyInfo:
 
     def test_failed_fetch_is_skipped(self, mocker, base_params) -> None:
         mocker.patch(
-            "rdd.pipelines.company_info.nodes.yf.Ticker",
+            "rdd.pipelines.company_information.company_info.nodes.yf.Ticker",
             side_effect=RuntimeError("API error"),
         )
 
@@ -120,7 +127,8 @@ class TestIngestCompanyInfo:
         mock_ticker = MagicMock()
         mock_ticker.info = _SAMPLE_INFO
         mocker.patch(
-            "rdd.pipelines.company_info.nodes.yf.Ticker", return_value=mock_ticker
+            "rdd.pipelines.company_information.company_info.nodes.yf.Ticker",
+            return_value=mock_ticker,
         )
 
         result = ingest_company_info(["AAPL"], {}, base_params)

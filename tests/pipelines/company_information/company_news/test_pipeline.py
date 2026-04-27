@@ -11,7 +11,7 @@ import pytest
 from kedro.io import DataCatalog, MemoryDataset
 from kedro.runner import SequentialRunner
 
-from rdd.pipelines.company_news.pipeline import create_pipeline
+from rdd.pipelines.company_information.company_news.pipeline import create_pipeline
 
 
 def _make_articles(ticker: str, n: int = 3) -> list[dict]:
@@ -60,7 +60,8 @@ def test_pipeline_runs_successfully(mocker, pipeline, in_memory_catalog) -> None
     mock_client = mocker.MagicMock()
     mock_client.company_news.side_effect = lambda t, **_: _make_articles(t)
     mocker.patch(
-        "rdd.pipelines.company_news.nodes.finnhub.Client", return_value=mock_client
+        "rdd.pipelines.company_information.company_news.nodes.finnhub.Client",
+        return_value=mock_client,
     )
 
     SequentialRunner().run(pipeline, in_memory_catalog)
@@ -75,7 +76,8 @@ def test_pipeline_output_schema(mocker, pipeline, in_memory_catalog) -> None:
     mock_client = mocker.MagicMock()
     mock_client.company_news.side_effect = lambda t, **_: _make_articles(t)
     mocker.patch(
-        "rdd.pipelines.company_news.nodes.finnhub.Client", return_value=mock_client
+        "rdd.pipelines.company_information.company_news.nodes.finnhub.Client",
+        return_value=mock_client,
     )
 
     SequentialRunner().run(pipeline, in_memory_catalog)
@@ -129,7 +131,8 @@ def test_pipeline_with_existing_data_does_incremental_fetch(
     mock_client = mocker.MagicMock()
     mock_client.company_news.return_value = new_articles
     mocker.patch(
-        "rdd.pipelines.company_news.nodes.finnhub.Client", return_value=mock_client
+        "rdd.pipelines.company_information.company_news.nodes.finnhub.Client",
+        return_value=mock_client,
     )
 
     SequentialRunner().run(pipeline, catalog)
