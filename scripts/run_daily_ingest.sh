@@ -52,9 +52,9 @@ run_pipeline() {
   fi
 
   local registered
-  registered=$(cd "$PROJECT_ROOT" && uv run kedro pipeline list 2>/dev/null || true)
+  registered=$(cd "$PROJECT_ROOT" && uv run kedro registry list 2>/dev/null || true)
 
-  if ! echo "$registered" | grep -qx "$pipeline"; then
+  if ! echo "$registered" | grep -q "\b${pipeline}\b"; then
     log "[SKIP] Pipeline '$pipeline' not registered — skipping"
     PIPELINE_STATUSES+=("skip")
     return 0
