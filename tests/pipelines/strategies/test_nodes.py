@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -18,6 +19,7 @@ from rdd.pipelines.strategies.nodes import (
     compute_mean_reversion_signals,
     compute_momentum_signals,
     compute_trend_signals,
+    compute_volatility_signals,
 )
 from tests.conftest import make_price_ohlcv
 
@@ -217,6 +219,75 @@ class TestComputeMeanReversionSignals:
 
 
 # ---------------------------------------------------------------------------
+# compute_volatility_signals
+# ---------------------------------------------------------------------------
+
+# 300 days of realistic-looking prices for GARCH to fit — fixed seed for determinism
+_rng = np.random.default_rng(42)
+_GARCH_PRICES = list(100.0 * np.exp(np.cumsum(_rng.normal(0, 0.01, 300))))
+
+
+class TestComputeVolatilitySignals:
+    @pytest.fixture
+    def params(self) -> dict:
+        return {
+            "garch_min_obs": 252,
+            "garch_vol_ratio_high": 1.5,
+            "garch_vol_ratio_low": 0.75,
+        }
+
+    def test_returns_signal_for_sufficient_data(self, params) -> None:
+        result = compute_volatility_signals(
+            _ohlcv(make_price_ohlcv(_GARCH_PRICES)), params
+        )
+
+        assert "aapl" in result
+        assert isinstance(result["aapl"], StrategySignal)
+        assert result["aapl"].strategy == "volatility"
+
+    def test_direction_is_valid(self, params) -> None:
+        result = compute_volatility_signals(
+            _ohlcv(make_price_ohlcv(_GARCH_PRICES)), params
+        )
+
+        assert result["aapl"].direction in {"bullish", "bearish", "neutral"}
+
+    def test_metrics_contain_required_keys(self, params) -> None:
+        result = compute_volatility_signals(
+            _ohlcv(make_price_ohlcv(_GARCH_PRICES)), params
+        )
+        metrics = result["aapl"].metrics
+
+        assert "current_vol_ann" in metrics
+        assert "long_run_vol_ann" in metrics
+        assert "vol_ratio" in metrics
+        assert "persistence" in metrics
+
+    def test_persistence_between_zero_and_one(self, params) -> None:
+        result = compute_volatility_signals(
+            _ohlcv(make_price_ohlcv(_GARCH_PRICES)), params
+        )
+
+        persistence = result["aapl"].metrics["persistence"]
+        assert 0.0 <= persistence < 1.0
+
+    def test_vol_ratio_positive(self, params) -> None:
+        result = compute_volatility_signals(
+            _ohlcv(make_price_ohlcv(_GARCH_PRICES)), params
+        )
+
+        assert result["aapl"].metrics["vol_ratio"] > 0
+
+    def test_skips_ticker_with_insufficient_data(self, params) -> None:
+        short_prices = [100.0 + i * 0.1 for i in range(100)]
+        result = compute_volatility_signals(
+            _ohlcv(make_price_ohlcv(short_prices)), params
+        )
+
+        assert "aapl" not in result
+
+
+# ---------------------------------------------------------------------------
 # assemble_stock_analyses
 # ---------------------------------------------------------------------------
 
@@ -231,41 +302,44 @@ class TestAssembleStockAnalyses:
         trend = {"aapl": _make_signal("trend"), "msft": _make_signal("trend")}
         mean_rev = {"aapl": _make_signal("mean_reversion")}
 
-        result = assemble_stock_analyses(momentum, trend, mean_rev)
+        result = assemble_stock_analyses(momentum, trend, mean_rev, {})
 
         assert "aapl" in result
         assert "msft" in result
 
     def test_ticker_is_uppercased_in_output(self) -> None:
         signal = {"aapl": _make_signal("momentum")}
-        result = assemble_stock_analyses(signal, {}, {})
+        result = assemble_stock_analyses(signal, {}, {}, {})
 
         assert result["aapl"]["ticker"] == "AAPL"
 
-    def test_all_three_strategy_signals_present(self) -> None:
-        sig = {"aapl": _make_signal("momentum")}
-        trend = {"aapl": _make_signal("trend")}
-        mean_rev = {"aapl": _make_signal("mean_reversion")}
-
-        result = assemble_stock_analyses(sig, trend, mean_rev)
-        strategies = {s["strategy"] for s in result["aapl"]["signals"]}
-
-        assert strategies == {"momentum", "trend", "mean_reversion"}
-
-    def test_missing_strategy_excluded_from_signals(self) -> None:
-        # mean_reversion skipped ticker (e.g. insufficient data)
+    def test_all_four_strategy_signals_present(self) -> None:
         result = assemble_stock_analyses(
             {"aapl": _make_signal("momentum")},
             {"aapl": _make_signal("trend")},
+            {"aapl": _make_signal("mean_reversion")},
+            {"aapl": _make_signal("volatility")},
+        )
+        strategies = {s["strategy"] for s in result["aapl"]["signals"]}
+
+        assert strategies == {"momentum", "trend", "mean_reversion", "volatility"}
+
+    def test_missing_strategy_excluded_from_signals(self) -> None:
+        # volatility skipped ticker (e.g. insufficient data for GARCH)
+        result = assemble_stock_analyses(
+            {"aapl": _make_signal("momentum")},
+            {"aapl": _make_signal("trend")},
+            {},
             {},
         )
 
         strategies = {s["strategy"] for s in result["aapl"]["signals"]}
         assert "mean_reversion" not in strategies
+        assert "volatility" not in strategies
         assert len(result["aapl"]["signals"]) == 2
 
     def test_output_has_required_top_level_keys(self) -> None:
-        result = assemble_stock_analyses({"aapl": _make_signal("momentum")}, {}, {})
+        result = assemble_stock_analyses({"aapl": _make_signal("momentum")}, {}, {}, {})
         entry = result["aapl"]
 
         assert {"ticker", "generated_at", "signals"} <= entry.keys()
@@ -276,6 +350,6 @@ class TestAssembleStockAnalyses:
             "aapl": _make_signal("momentum"),
             "goog": _make_signal("momentum"),
         }
-        result = assemble_stock_analyses(signals, {}, {})
+        result = assemble_stock_analyses(signals, {}, {}, {})
 
         assert list(result.keys()) == sorted(result.keys())

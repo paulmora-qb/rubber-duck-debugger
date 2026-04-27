@@ -7,6 +7,7 @@ from rdd.pipelines.strategies.nodes import (
     compute_mean_reversion_signals,
     compute_momentum_signals,
     compute_trend_signals,
+    compute_volatility_signals,
 )
 
 
@@ -33,8 +34,19 @@ def create_pipeline(**_kwargs) -> Pipeline:
                 name="compute_mean_reversion_signals",
             ),
             node(
+                func=compute_volatility_signals,
+                inputs=["raw_ohlcv", "params:strategies"],
+                outputs="volatility_signals",
+                name="compute_volatility_signals",
+            ),
+            node(
                 func=assemble_stock_analyses,
-                inputs=["momentum_signals", "trend_signals", "mean_reversion_signals"],
+                inputs=[
+                    "momentum_signals",
+                    "trend_signals",
+                    "mean_reversion_signals",
+                    "volatility_signals",
+                ],
                 outputs="stock_analyses",
                 name="assemble_stock_analyses",
             ),
