@@ -62,7 +62,10 @@ def _fetch_membership() -> dict[str, list[str]]:
         return t.replace(".", "-")
 
     sp500: list[str] = (
-        _get("https://en.wikipedia.org/wiki/List_of_S%26P_500_companies", attrs={"id": "constituents"})[0]["Symbol"]
+        _get(
+            "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies",
+            attrs={"id": "constituents"},
+        )[0]["Symbol"]
         .map(_normalise)
         .tolist()
     )
@@ -79,7 +82,9 @@ def _fetch_membership() -> dict[str, list[str]]:
 def _load_membership() -> dict[str, set[str]]:
     """Return {index_name: set(tickers)}, refreshing the cache if stale."""
     if _MEMBERSHIP_CACHE.exists():
-        age_days = (datetime.now() - datetime.fromtimestamp(_MEMBERSHIP_CACHE.stat().st_mtime)).days
+        age_days = (
+            datetime.now() - datetime.fromtimestamp(_MEMBERSHIP_CACHE.stat().st_mtime)
+        ).days
         if age_days < _MEMBERSHIP_TTL_DAYS:
             data = json.loads(_MEMBERSHIP_CACHE.read_text())
             return {k: set(v) for k, v in data.items()}
@@ -226,15 +231,41 @@ def _make_chart(history: dict[date, dict], membership: dict[str, set[str]]) -> b
     fig, ax = plt.subplots(figsize=(10, 4))
 
     if dates:
-        ax.plot(dates, sp500_counts, color="#1f77b4", marker="o", markersize=4, label="S&P 500")
-        ax.plot(dates, ndx100_counts, color="#ff7f0e", marker="s", markersize=4, label="NASDAQ 100")
+        ax.plot(
+            dates,
+            sp500_counts,
+            color="#1f77b4",
+            marker="o",
+            markersize=4,
+            label="S&P 500",
+        )
+        ax.plot(
+            dates,
+            ndx100_counts,
+            color="#ff7f0e",
+            marker="s",
+            markersize=4,
+            label="NASDAQ 100",
+        )
 
     if sp500_expected:
-        ax.axhline(sp500_expected, color="#1f77b4", linestyle="--", linewidth=0.8, alpha=0.6,
-                   label=f"S&P 500 universe ({sp500_expected})")
+        ax.axhline(
+            sp500_expected,
+            color="#1f77b4",
+            linestyle="--",
+            linewidth=0.8,
+            alpha=0.6,
+            label=f"S&P 500 universe ({sp500_expected})",
+        )
     if ndx100_expected:
-        ax.axhline(ndx100_expected, color="#ff7f0e", linestyle="--", linewidth=0.8, alpha=0.6,
-                   label=f"NASDAQ 100 universe ({ndx100_expected})")
+        ax.axhline(
+            ndx100_expected,
+            color="#ff7f0e",
+            linestyle="--",
+            linewidth=0.8,
+            alpha=0.6,
+            label=f"NASDAQ 100 universe ({ndx100_expected})",
+        )
 
     ax.set_title(f"Stocks fetched per run — last {_HISTORY_DAYS} days", fontsize=10)
     ax.set_ylabel("Stocks fetched")
@@ -318,17 +349,25 @@ def _html_body(
 def main() -> None:
     """Send daily ingest report email."""
     parser = argparse.ArgumentParser()
-    parser.add_argument("--ohlcv-dir", default=None, help="Path to data/raw/ohlcv directory")
+    parser.add_argument(
+        "--ohlcv-dir", default=None, help="Path to data/raw/ohlcv directory"
+    )
     parser.add_argument("triplets", nargs="*")
     args = parser.parse_args()
 
     if not args.triplets or len(args.triplets) % 3 != 0:
-        sys.exit("Usage: send_report.py [--ohlcv-dir DIR] <pipeline> <status> <log_path> ...")
+        sys.exit(
+            "Usage: send_report.py [--ohlcv-dir DIR] <pipeline> <status> <log_path> ..."
+        )
 
     results: dict[str, str] = {}
     log_paths: dict[str, str] = {}
     for i in range(0, len(args.triplets), 3):
-        name, status, log_path = args.triplets[i], args.triplets[i + 1], args.triplets[i + 2]
+        name, status, log_path = (
+            args.triplets[i],
+            args.triplets[i + 1],
+            args.triplets[i + 2],
+        )
         results[name] = status
         log_paths[name] = log_path
 
