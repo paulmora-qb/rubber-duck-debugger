@@ -18,9 +18,12 @@ jobs:
       - uses: actions/checkout@v6
       - uses: astral-sh/ruff-action@v3
         name: Run the ruff linter
+        with:
+          version: "0.11.7"
       - uses: astral-sh/ruff-action@v3
         name: Run the ruff formatter check
         with:
+          version: "0.11.7"
           args: "format --check --diff"
 
   pytest:
