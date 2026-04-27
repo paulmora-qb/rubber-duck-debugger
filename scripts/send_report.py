@@ -49,6 +49,7 @@ def _body(results: dict[str, str], log_paths: dict[str, str]) -> str:
 
 
 def main() -> None:
+    """Send daily ingest report email."""
     args = sys.argv[1:]
     if not args or len(args) % 3 != 0:
         sys.exit("Usage: send_report.py <pipeline> <status> <log_path> ...")
@@ -77,7 +78,7 @@ def main() -> None:
         conn.login(smtp_user, smtp_pass)
         conn.send_message(msg)
 
-    print(f"Report sent to {to_addr}")
+    sys.stdout.write(f"Report sent to {to_addr}\n")
 
 
 if __name__ == "__main__":
