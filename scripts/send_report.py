@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import io
 import json
+import logging
 import os
 import smtplib
 import ssl
@@ -22,11 +23,14 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from pathlib import Path
 
-import matplotlib
+import matplotlib as mpl
 import matplotlib.pyplot as plt
+import pandas as pd
+import requests
 
-matplotlib.use("Agg")
+mpl.use("Agg")
 
+_logger = logging.getLogger(__name__)
 _LOG_TAIL = 50
 _LOGS_DIR = Path(__file__).parent.parent / "logs"
 _MANIFEST = _LOGS_DIR / "run_manifest.jsonl"
@@ -42,11 +46,6 @@ _HISTORY_DAYS = 30
 
 def _fetch_membership() -> dict[str, list[str]]:
     """Fetch S&P 500 and NASDAQ 100 tickers from the same sources as the pipeline."""
-    import io as _io
-
-    import pandas as pd
-    import requests
-
     headers = {
         "User-Agent": (
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
@@ -57,7 +56,7 @@ def _fetch_membership() -> dict[str, list[str]]:
     def _get(url: str, **kwargs: object) -> list[pd.DataFrame]:
         resp = requests.get(url, headers=headers, timeout=30)
         resp.raise_for_status()
-        return pd.read_html(_io.StringIO(resp.text), **kwargs)
+        return pd.read_html(io.StringIO(resp.text), **kwargs)
 
     def _normalise(t: str) -> str:
         return t.replace(".", "-")
@@ -141,8 +140,6 @@ def _backfill_manifest(
     if not p.exists():
         return
 
-    import pandas as pd
-
     cutoff = date.today() - timedelta(days=days)
     date_tickers: dict[date, set[str]] = {}
 
@@ -153,7 +150,8 @@ def _backfill_manifest(
             for d in df["date"].dt.date.unique():
                 if d >= cutoff:
                     date_tickers.setdefault(d, set()).add(ticker)
-        except Exception:  # noqa: BLE001
+        except Exception:
+            _logger.warning("Failed to read parquet %s", f, exc_info=True)
             continue
 
     for d, tickers in sorted(date_tickers.items()):
