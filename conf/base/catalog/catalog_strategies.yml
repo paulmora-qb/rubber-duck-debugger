@@ -1,0 +1,17 @@
+# Intermediate signal dicts — in-memory only, not persisted between runs.
+momentum_signals:
+  type: MemoryDataset
+
+trend_signals:
+  type: MemoryDataset
+
+mean_reversion_signals:
+  type: MemoryDataset
+
+# Final output: one JSON object per ticker, consumed by the agent debate system.
+stock_analyses:
+  type: kedro_datasets.json.JSONDataset
+  filepath: ${globals:data_dir}strategies/stock_analyses.json
+  metadata:
+    kedro-viz:
+      layer: primary

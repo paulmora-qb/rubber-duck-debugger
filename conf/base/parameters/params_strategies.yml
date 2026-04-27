@@ -1,0 +1,22 @@
+strategies:
+  # Momentum: return windows in trading days
+  momentum_windows:
+    1m: 21
+    3m: 63
+    6m: 126
+    12m: 252
+  # Minimum number of positive windows to be bullish (out of 4)
+  momentum_min_bullish: 3
+
+  # Trend: moving-average windows in trading days
+  trend_short_window: 50
+  trend_long_window: 200
+
+  # Mean reversion: RSI settings
+  rsi_window: 14
+  rsi_oversold: 30.0
+  rsi_overbought: 70.0
+
+  # Mean reversion: Bollinger Band settings
+  bb_window: 20
+  bb_std: 2.0
