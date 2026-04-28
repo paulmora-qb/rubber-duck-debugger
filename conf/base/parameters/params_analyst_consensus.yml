@@ -1,0 +1,2 @@
+analyst_consensus:
+  refresh_days: 1  # re-fetch a ticker's snapshot if it is older than this many days
