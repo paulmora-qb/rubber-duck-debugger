@@ -1,0 +1,1 @@
+"""Company financials ingestion pipeline."""

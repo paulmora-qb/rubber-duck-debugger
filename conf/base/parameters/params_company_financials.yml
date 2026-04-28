@@ -1,0 +1,2 @@
+company_financials:
+  refresh_days: 7  # re-fetch a ticker's snapshot if it is older than this many days

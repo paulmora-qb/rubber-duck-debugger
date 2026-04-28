@@ -61,6 +61,14 @@ jobs:
 
 # ── Tests ─────────────────────────────────────────────────────────────────────
 
+  test-pipelines-company-financials:
+    name: "Tests / Pipelines / company_financials"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup-python-uv
+      - run: uv run --locked pytest tests/pipelines/company_financials
+
   test-pipelines-company-info:
     name: "Tests / Pipelines / company_info"
     runs-on: ubuntu-latest
