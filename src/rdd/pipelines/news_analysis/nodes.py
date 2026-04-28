@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import subprocess
 from collections.abc import Callable
 from typing import Any
 
@@ -56,12 +57,38 @@ Rules:
 """
 
 
-def _make_client() -> anthropic.Anthropic:
-    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
-    if not api_key:
-        msg = "ANTHROPIC_API_KEY environment variable is not set."
+def _resolve_api_key() -> str:
+    """Return an Anthropic API key.
+
+    Tries ANTHROPIC_API_KEY first; falls back to the apiKeyHelper script
+    configured in ~/.claude/settings.json (McKinsey AI-gateway pattern).
+    """
+    key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if key:
+        return key
+
+    settings_path = os.path.expanduser("~/.claude/settings.json")
+    try:
+        with open(settings_path) as f:
+            helper = json.load(f).get("apiKeyHelper", "")
+    except Exception:
+        helper = ""
+
+    if not helper:
+        msg = "ANTHROPIC_API_KEY is not set and no apiKeyHelper found in ~/.claude/settings.json."
         raise OSError(msg)
-    return anthropic.Anthropic(api_key=api_key)
+
+    result = subprocess.run([helper], capture_output=True, text=True, check=True)  # noqa: S603
+    return result.stdout.strip()
+
+
+def _make_client() -> anthropic.Anthropic:
+    api_key = _resolve_api_key()
+    base_url = os.environ.get("ANTHROPIC_BASE_URL")
+    kwargs: dict[str, str] = {"api_key": api_key}
+    if base_url:
+        kwargs["base_url"] = base_url
+    return anthropic.Anthropic(**kwargs)
 
 
 def _articles_to_text(df: pd.DataFrame, lookback_days: int) -> tuple[str, int]:
@@ -117,6 +144,10 @@ def _call_claude(
         messages=[{"role": "user", "content": prompt}],
     )
     raw_text = message.content[0].text.strip()
+    # Strip markdown code fences if the model wraps its output
+    if raw_text.startswith("```"):
+        raw_text = raw_text.split("\n", 1)[-1]
+        raw_text = raw_text.rsplit("```", 1)[0].strip()
     analysis = json.loads(raw_text)
     # Ensure article_count reflects what was actually passed in
     analysis["article_count"] = article_count
