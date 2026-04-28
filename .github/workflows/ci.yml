@@ -69,14 +69,6 @@ jobs:
       - uses: ./.github/actions/setup-python-uv
       - run: uv run --locked pytest tests/pipelines/company_info
 
-  test-pipelines-company-information:
-    name: "Tests / Pipelines / company_information"
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: ./.github/actions/setup-python-uv
-      - run: uv run --locked pytest tests/pipelines/company_information
-
   test-pipelines-company-news:
     name: "Tests / Pipelines / company_news"
     runs-on: ubuntu-latest
@@ -92,22 +84,6 @@ jobs:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-python-uv
       - run: uv run --locked pytest tests/pipelines/data_ingestion
-
-  test-pipelines-finnhub-company-news:
-    name: "Tests / Pipelines / finnhub_company_news"
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: ./.github/actions/setup-python-uv
-      - run: uv run --locked pytest tests/pipelines/finnhub_company_news
-
-  test-pipelines-finnhub-news:
-    name: "Tests / Pipelines / finnhub_news"
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: ./.github/actions/setup-python-uv
-      - run: uv run --locked pytest tests/pipelines/finnhub_news
 
   test-pipelines-strategies:
     name: "Tests / Pipelines / strategies"
