@@ -19,41 +19,38 @@ _REQUIRED_KEYS = {
     "analysis_date",
     "article_count",
     "lookback_days",
-    "sentiment_score",
-    "bull_thesis",
-    "bear_thesis",
-    "discussion",
-    "overall_assessment",
-    "key_topics",
+    "bull_report",
+    "bear_report",
 }
 
-_ANALYSIS_PROMPT = """\
-You are a financial news analyst. Analyse the following recent news articles for {ticker} \
-and produce a structured investment thesis with both bullish and bearish perspectives.
+_BULL_PROMPT = """\
+You are a seasoned buy-side analyst making the bull case for {ticker}.
 
-News articles (most recent {lookback_days} days):
+Below are {article_count} news articles from the past {lookback_days} days. \
+Read them carefully and write a thorough bullish investment report. \
+Cite specific articles (by headline or date) to support each point. \
+Cover: key growth catalysts, positive developments, why bears are wrong, \
+and what the news implies for the stock price.
+
+News articles:
 {articles_text}
 
-Return ONLY a valid JSON object with exactly these keys (no markdown, no code fences):
-{{
-  "ticker": "{ticker}",
-  "analysis_date": "<ISO8601 UTC timestamp, e.g. 2024-01-15T10:00:00Z>",
-  "article_count": <integer count of articles analysed>,
-  "lookback_days": {lookback_days},
-  "sentiment_score": <float between -1.0 (very bearish) and 1.0 (very bullish)>,
-  "bull_thesis": "<bull analyst's key points citing specific news>",
-  "bear_thesis": "<bear analyst's key points citing specific news>",
-  "discussion": "<realistic back-and-forth labelled 'Bull Analyst:' and 'Bear Analyst:', \
-each citing specific articles>",
-  "overall_assessment": "<synthesised conclusion balancing both views>",
-  "key_topics": ["<topic1>", "<topic2>", "<topic3>"]
-}}
+Write the report in plain prose (no JSON, no bullet points). Be thorough.
+"""
 
-Rules:
-- sentiment_score must reflect the net balance of the news (-1.0 to 1.0).
-- discussion must contain at least two exchanges (Bull → Bear → Bull or Bear → Bull → Bear).
-- key_topics must have 3-5 strings.
-- Return ONLY the JSON — no other text.
+_BEAR_PROMPT = """\
+You are a seasoned short-seller making the bear case for {ticker}.
+
+Below are {article_count} news articles from the past {lookback_days} days. \
+Read them carefully and write a thorough bearish investment report. \
+Cite specific articles (by headline or date) to support each point. \
+Cover: key risks and headwinds, negative developments, why bulls are wrong, \
+and what the news implies for the stock price.
+
+News articles:
+{articles_text}
+
+Write the report in plain prose (no JSON, no bullet points). Be thorough.
 """
 
 
@@ -124,34 +121,19 @@ def _is_fresh(analysis: dict[str, Any], cutoff: pd.Timestamp) -> bool:
         return False
 
 
-def _call_claude(
+def _call_report(
     client: anthropic.Anthropic,
-    ticker: str,
-    articles_text: str,
-    article_count: int,
-    lookback_days: int,
+    prompt: str,
     model: str,
-) -> dict[str, Any]:
-    """Call the Claude API for one ticker and return the parsed analysis dict."""
-    prompt = _ANALYSIS_PROMPT.format(
-        ticker=ticker,
-        lookback_days=lookback_days,
-        articles_text=articles_text,
-    )
+    max_tokens: int,
+) -> str:
+    """Call the Claude API and return the plain-text report."""
     message = client.messages.create(
         model=model,
-        max_tokens=2048,
+        max_tokens=max_tokens,
         messages=[{"role": "user", "content": prompt}],
     )
-    raw_text = message.content[0].text.strip()
-    # Strip markdown code fences if the model wraps its output
-    if raw_text.startswith("```"):
-        raw_text = raw_text.split("\n", 1)[-1]
-        raw_text = raw_text.rsplit("```", 1)[0].strip()
-    analysis = json.loads(raw_text)
-    # Ensure article_count reflects what was actually passed in
-    analysis["article_count"] = article_count
-    return analysis
+    return message.content[0].text.strip()
 
 
 def analyze_news(
@@ -159,31 +141,28 @@ def analyze_news(
     existing: dict[str, Any],
     params: dict[str, Any],
 ) -> dict[str, Any]:
-    """Analyse recent company news with a Claude bull/bear agent discussion.
+    """Produce a bull report and a bear report for each ticker using Claude.
 
-    For each ticker in *company_news*, loads recent articles and asks Claude to
-    produce a structured JSON analysis with bullish and bearish theses plus a
-    simulated discussion between the two analysts.
+    Makes two separate API calls per ticker — one dedicated bull analyst call
+    and one dedicated bear analyst call — so each perspective gets the full
+    output budget rather than sharing it.
 
     Skips tickers whose existing analysis is fresher than ``params.refresh_hours``.
     A Claude API failure for one ticker is logged and skipped — other tickers are
     still processed.
 
     Args:
-        company_news: Mapping of ticker (lowercase) → lazy DataFrame loader from
-            Kedro's ``PartitionedDataset``.
-        existing: Mapping of ticker (lowercase) → lazy JSON loader (or already-
-            loaded dict) from the ``NullablePartitionedDataset`` for existing
-            analyses.
+        company_news: Mapping of ticker (lowercase) → lazy DataFrame loader.
+        existing: Mapping of ticker (lowercase) → lazy JSON loader for existing analyses.
         params: ``news_analysis`` parameter block from ``params_news_analysis.yml``.
 
     Returns:
-        Mapping of ticker (lowercase) → analysis dict for the PartitionedDataset
-        to persist as JSON files.
+        Mapping of ticker (lowercase) → analysis dict to persist as JSON.
     """
     lookback_days = int(params["lookback_days"])
     model = str(params["model"])
     refresh_hours = float(params["refresh_hours"])
+    max_tokens = int(params.get("max_tokens", 2048))
 
     cutoff = pd.Timestamp.now("UTC").tz_convert(None) - pd.Timedelta(
         hours=refresh_hours
@@ -210,7 +189,7 @@ def analyze_news(
                     "Could not load existing analysis for %s.", ticker, exc_info=True
                 )
 
-        # --- load news data ------------------------------------------------
+        # --- load and filter news ------------------------------------------
         try:
             df = loader()
         except Exception:
@@ -228,15 +207,29 @@ def analyze_news(
             )
             continue
 
-        # --- call Claude ---------------------------------------------------
+        # --- two dedicated Claude calls ------------------------------------
         try:
-            analysis = _call_claude(
+            bull_report = _call_report(
                 client=client,
-                ticker=ticker,
-                articles_text=articles_text,
-                article_count=article_count,
-                lookback_days=lookback_days,
+                prompt=_BULL_PROMPT.format(
+                    ticker=ticker,
+                    article_count=article_count,
+                    lookback_days=lookback_days,
+                    articles_text=articles_text,
+                ),
                 model=model,
+                max_tokens=max_tokens,
+            )
+            bear_report = _call_report(
+                client=client,
+                prompt=_BEAR_PROMPT.format(
+                    ticker=ticker,
+                    article_count=article_count,
+                    lookback_days=lookback_days,
+                    articles_text=articles_text,
+                ),
+                model=model,
+                max_tokens=max_tokens,
             )
         except Exception:
             logger.warning(
@@ -244,13 +237,14 @@ def analyze_news(
             )
             continue
 
-        # --- basic validation ----------------------------------------------
-        missing = _REQUIRED_KEYS - analysis.keys()
-        if missing:
-            logger.warning(
-                "Claude response for %s missing keys %s — skipping.", ticker, missing
-            )
-            continue
+        analysis = {
+            "ticker": ticker,
+            "analysis_date": pd.Timestamp.now("UTC").strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "article_count": article_count,
+            "lookback_days": lookback_days,
+            "bull_report": bull_report,
+            "bear_report": bear_report,
+        }
 
         result[partition_key] = analysis
         logger.debug("Analysis complete for %s (%d articles).", ticker, article_count)
