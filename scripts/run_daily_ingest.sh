@@ -123,6 +123,9 @@ main() {
   run_pipeline company_info
   run_pipeline company_news
   run_pipeline company_financials
+  run_pipeline valuation_ratios
+  run_pipeline analyst_consensus
+  run_pipeline earnings_history
   backfill_news
   run_pipeline strategies
 

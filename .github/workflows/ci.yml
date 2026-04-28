@@ -93,6 +93,30 @@ jobs:
       - uses: ./.github/actions/setup-python-uv
       - run: uv run --locked pytest tests/pipelines/data_ingestion
 
+  test-pipelines-valuation-ratios:
+    name: "Tests / Pipelines / valuation_ratios"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup-python-uv
+      - run: uv run --locked pytest tests/pipelines/valuation_ratios
+
+  test-pipelines-analyst-consensus:
+    name: "Tests / Pipelines / analyst_consensus"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup-python-uv
+      - run: uv run --locked pytest tests/pipelines/analyst_consensus
+
+  test-pipelines-earnings-history:
+    name: "Tests / Pipelines / earnings_history"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup-python-uv
+      - run: uv run --locked pytest tests/pipelines/earnings_history
+
   test-pipelines-strategies:
     name: "Tests / Pipelines / strategies"
     runs-on: ubuntu-latest

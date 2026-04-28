@@ -1,0 +1,2 @@
+earnings_history:
+  refresh_days: 30  # re-fetch a ticker's data if it is older than this many days

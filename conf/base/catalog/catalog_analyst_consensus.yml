@@ -1,0 +1,26 @@
+# Read-side: existing snapshots fed into the ingest node as lazy loaders.
+# Uses NullablePartitionedDataset so the first run (empty dir) returns {} gracefully.
+raw_analyst_consensus_existing:
+  type: rdd.datasets.nullable_partitioned.NullablePartitionedDataset
+  path: ${globals:data_dir}raw/analyst_consensus
+  dataset:
+    type: pandas.ParquetDataset
+  filename_suffix: ".parquet"
+  metadata:
+    kedro-viz:
+      layer: raw
+
+# Write-side: merged output saved back to the same path.
+raw_analyst_consensus:
+  type: kedro_datasets.partitions.PartitionedDataset
+  path: ${globals:data_dir}raw/analyst_consensus
+  dataset:
+    type: pandas.ParquetDataset
+  filename_suffix: ".parquet"
+  metadata:
+    kedro-viz:
+      layer: raw
+    pandera:
+      schema:
+        type: python.model
+        object_path: rdd.schemas.analyst_consensus.AnalystConsensusSchema

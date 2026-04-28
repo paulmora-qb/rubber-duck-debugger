@@ -1,0 +1,13 @@
+raw_valuation_ratios:
+  type: kedro_datasets.partitions.PartitionedDataset
+  path: ${globals:data_dir}raw/valuation_ratios
+  dataset:
+    type: pandas.ParquetDataset
+  filename_suffix: ".parquet"
+  metadata:
+    kedro-viz:
+      layer: raw
+    pandera:
+      schema:
+        type: python.model
+        object_path: rdd.schemas.valuation_ratios.ValuationRatiosSchema
