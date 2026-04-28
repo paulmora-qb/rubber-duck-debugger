@@ -18,6 +18,7 @@ dependencies = [
     "pandera>=0.21",
     "lxml>=5.0",
     "arch>=8.0.0",
+    "anthropic>=0.40.0",
 ]
 
 [tool.uv]
@@ -100,10 +101,11 @@ fixable = ["ALL"]
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
 "tests/**/*" = [
-    "S101",   # Allow assert in tests
-    "D1",     # Allow missing docstrings in tests
-    "ARG001", # Allow unused function arguments in test helpers/side-effects
-    "S603",   # subprocess with fixed list args is safe in tests
+    "S101",    # Allow assert in tests
+    "D1",      # Allow missing docstrings in tests
+    "ARG001",  # Allow unused function arguments in test helpers/side-effects
+    "S603",    # subprocess with fixed list args is safe in tests
+    "PLW0108", # Lambdas wrapping fixtures/helpers are intentional in tests
 ]
 "src/rdd/schemas/*.py" = [
     "N805",  # pandera @dataframe_check uses cls by convention, not self

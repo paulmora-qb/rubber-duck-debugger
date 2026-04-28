@@ -14,6 +14,7 @@ from rdd.pipelines.data_ingestion.pipeline import create_pipeline as data_ingest
 from rdd.pipelines.earnings_history.pipeline import (
     create_pipeline as earnings_history,
 )
+from rdd.pipelines.news_analysis.pipeline import create_pipeline as news_analysis
 from rdd.pipelines.strategies.pipeline import create_pipeline as strategies
 from rdd.pipelines.valuation_ratios.pipeline import (
     create_pipeline as valuation_ratios,
@@ -30,8 +31,9 @@ def register_pipelines() -> dict[str, Pipeline]:
     ac = analyst_consensus()
     eh = earnings_history()
     st = strategies()
+    na = news_analysis()
     return {
-        "__default__": di + ci + cn + cf + vr + ac + eh + st,
+        "__default__": di + ci + cn + cf + vr + ac + eh + st + na,
         "data_ingestion": di,
         "company_info": ci,
         "company_news": cn,
@@ -40,4 +42,5 @@ def register_pipelines() -> dict[str, Pipeline]:
         "analyst_consensus": ac,
         "earnings_history": eh,
         "strategies": st,
+        "news_analysis": na,
     }

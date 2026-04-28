@@ -1,0 +1,19 @@
+raw_news_analysis_existing:
+  type: rdd.datasets.nullable_partitioned.NullablePartitionedDataset
+  path: ${globals:data_dir}raw/news_analysis
+  dataset:
+    type: kedro_datasets.json.JSONDataset
+  filename_suffix: ".json"
+  metadata:
+    kedro-viz:
+      layer: raw
+
+raw_news_analysis:
+  type: kedro_datasets.partitions.PartitionedDataset
+  path: ${globals:data_dir}raw/news_analysis
+  dataset:
+    type: kedro_datasets.json.JSONDataset
+  filename_suffix: ".json"
+  metadata:
+    kedro-viz:
+      layer: raw
