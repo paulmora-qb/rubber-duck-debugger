@@ -71,7 +71,7 @@ are wrong or overstated. ~200 words total. Be specific — do not just dismiss.
 - **Key catalyst to watch**: one event or data point that would most change your view.
 
 ---
-Total length: 700-1000 words. Do not exceed 1000 words. Write in clear, direct
+Total length: 1200-1500 words. Do not exceed 1500 words. Write in clear, direct
 prose - no filler phrases, no repetition across sections.
 """
 
