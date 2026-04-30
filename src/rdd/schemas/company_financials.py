@@ -23,7 +23,7 @@ class CompanyFinancialsSchema(DataFrameModel):
     )
 
     # --- Income Statement ---
-    total_revenue: Series[float] = pa.Field(nullable=True, ge=0)
+    total_revenue: Series[float] = pa.Field(nullable=True)
     gross_profit: Series[float] = pa.Field(nullable=True)
     operating_income: Series[float] = pa.Field(nullable=True)
     net_income: Series[float] = pa.Field(nullable=True)
