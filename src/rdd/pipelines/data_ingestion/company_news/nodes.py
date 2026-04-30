@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
+import time
 from collections.abc import Callable
 from typing import Any
 
@@ -13,6 +14,7 @@ import pandas as pd
 logger = logging.getLogger(__name__)
 
 _DATE_FMT = "%Y-%m-%d"
+_RATE_LIMIT_PAUSE = 1.1  # seconds between calls (free tier: 60/min)
 
 
 def _make_client() -> finnhub.Client:
@@ -142,8 +144,10 @@ def ingest_company_news(
             )
             if ticker in existing_data:
                 result[ticker.lower()] = existing_data[ticker]
+            time.sleep(_RATE_LIMIT_PAUSE)
             continue
 
+        time.sleep(_RATE_LIMIT_PAUSE)
         new_df = _articles_to_df(ticker, articles)
         merged = _merge_articles(existing_data.get(ticker), new_df)
         if merged is not None:
