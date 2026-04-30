@@ -1,0 +1,17 @@
+portfolio_ticker_scores:
+  type: kedro_datasets.json.JSONDataset
+  filepath: "${globals:data_dir}portfolio/ticker_scores.json"
+
+portfolio_allocation:
+  type: kedro_datasets.json.JSONDataset
+  filepath: "${globals:data_dir}portfolio/allocation.json"
+
+# live_portfolio is maintained externally (updated after trades are executed).
+# Returns {} on first run so the pipeline treats it as no prior holdings.
+live_portfolio:
+  type: rdd.datasets.nullable_json.NullableJSONDataset
+  filepath: "${globals:data_dir}portfolio/live_portfolio.json"
+
+portfolio_trades:
+  type: kedro_datasets.json.JSONDataset
+  filepath: "${globals:data_dir}portfolio/trades.json"
