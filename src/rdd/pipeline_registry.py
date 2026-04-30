@@ -29,6 +29,9 @@ from rdd.pipelines.feature_engineering.news_analysis.pipeline import (
 from rdd.pipelines.feature_engineering.strategies.pipeline import (
     create_pipeline as strategies,
 )
+from rdd.pipelines.portfolio_construction.pipeline import (
+    create_pipeline as portfolio_construction,
+)
 
 
 def register_pipelines() -> dict[str, Pipeline]:
@@ -42,8 +45,9 @@ def register_pipelines() -> dict[str, Pipeline]:
     eh = earnings_history()
     st = strategies()
     na = news_analysis()
+    pc = portfolio_construction()
     return {
-        "__default__": sp + ci + cn + cf + vr + ac + eh + st + na,
+        "__default__": sp + ci + cn + cf + vr + ac + eh + st + na + pc,
         "stock_prices": sp,
         "company_info": ci,
         "company_news": cn,
@@ -53,4 +57,5 @@ def register_pipelines() -> dict[str, Pipeline]:
         "earnings_history": eh,
         "strategies": st,
         "news_analysis": na,
+        "portfolio_construction": pc,
     }
