@@ -110,11 +110,11 @@ fixable = ["ALL"]
 "src/rdd/schemas/*.py" = [
     "N805",  # pandera @dataframe_check uses cls by convention, not self
 ]
-"src/rdd/pipelines/data_ingestion/nodes.py" = [
+"src/rdd/pipelines/data_ingestion/stock_prices/nodes.py" = [
     "PLR0912", # ingest_ohlcv has many branches — intentional complexity
     "PLR0915", # ingest_ohlcv has many statements — intentional complexity
 ]
-"src/rdd/pipelines/strategies/nodes.py" = [
+"src/rdd/pipelines/feature_engineering/strategies/nodes.py" = [
     "PLR0912", # per-strategy nodes have intentional branching for direction logic
     "S112",    # GARCH fit failures are silently skipped — ticker excluded from output
 ]
