@@ -23,34 +23,82 @@ _REQUIRED_KEYS = {
     "bear_report",
 }
 
+# ---------------------------------------------------------------------------
+# Report style guide — embedded verbatim in both prompts so every report
+# follows the same scannable structure regardless of ticker or analyst stance.
+# Keeping it here (rather than in a config file) means the prompts and their
+# formatting contract live in the same place.
+# ---------------------------------------------------------------------------
+_STYLE_GUIDE = """\
+REPORT FORMAT — follow this structure exactly, using the markdown headers shown:
+
+## Executive Summary
+Two sentences maximum. State your 12-month price target, the direction of the
+thesis (bullish/bearish), and your conviction (1 = low, 5 = high).
+Example: "We rate {ticker} a BUY with a 12-month target of $XXX (conviction 4/5). \
+The core thesis is [one clause]."
+
+## Key Metrics Snapshot
+A bullet list drawn from figures mentioned in the articles. Include only numbers
+that appear in the source material — do not invent them. Aim for 4-6 bullets:
+- Current price: $X (as of [date])
+- Forward P/E: Xx (if mentioned)
+- Revenue growth (YoY): X% (most recent quarter cited)
+- Gross / operating margin: X% (if mentioned)
+- Any other metric directly cited (e.g. Services revenue, unit shipments)
+
+## Three Core Arguments
+Three subsections, each with a bold one-line header followed by 3-5 sentences of
+evidence. Cite at least one specific article per argument (headline or date).
+Keep each argument to ~150 words.
+
+### Argument 1: [bold headline]
+...
+
+### Argument 2: [bold headline]
+...
+
+### Argument 3: [bold headline]
+...
+
+## Addressing the Opposition
+The two or three strongest counter-arguments from the other side, and why they
+are wrong or overstated. ~200 words total. Be specific — do not just dismiss.
+
+## Price Target and Catalysts
+- **3-month view**: $X-Y — one sentence on the near-term driver.
+- **12-month target**: $X — one sentence on the primary thesis driver.
+- **Key catalyst to watch**: one event or data point that would most change your view.
+
+---
+Total length: 700-1000 words. Do not exceed 1000 words. Write in clear, direct
+prose - no filler phrases, no repetition across sections.
+"""
+
 _BULL_PROMPT = """\
 You are a seasoned buy-side analyst making the bull case for {ticker}.
 
-Below are {article_count} news articles from the past {lookback_days} days. \
-Read them carefully and write a thorough bullish investment report. \
-Cite specific articles (by headline or date) to support each point. \
-Cover: key growth catalysts, positive developments, why bears are wrong, \
-and what the news implies for the stock price.
+Below are {article_count} news articles from the past {lookback_days} days.
+Read them carefully and write a bullish investment report following the style
+guide below. Cite specific articles (by headline or date) for every claim.
+
+{style_guide}
 
 News articles:
 {articles_text}
-
-Write the report in plain prose (no JSON, no bullet points). Be thorough.
 """
 
 _BEAR_PROMPT = """\
 You are a seasoned short-seller making the bear case for {ticker}.
 
-Below are {article_count} news articles from the past {lookback_days} days. \
-Read them carefully and write a thorough bearish investment report. \
-Cite specific articles (by headline or date) to support each point. \
-Cover: key risks and headwinds, negative developments, why bulls are wrong, \
-and what the news implies for the stock price.
+Below are {article_count} news articles from the past {lookback_days} days.
+Read them carefully and write a bearish investment report following the style
+guide below. Cite specific articles (by headline or date) for every claim.
+
+{style_guide}
 
 News articles:
 {articles_text}
-
-Write the report in plain prose (no JSON, no bullet points). Be thorough.
 """
 
 
@@ -215,6 +263,7 @@ def analyze_news(
                     ticker=ticker,
                     article_count=article_count,
                     lookback_days=lookback_days,
+                    style_guide=_STYLE_GUIDE.format(ticker=ticker),
                     articles_text=articles_text,
                 ),
                 model=model,
@@ -226,6 +275,7 @@ def analyze_news(
                     ticker=ticker,
                     article_count=article_count,
                     lookback_days=lookback_days,
+                    style_guide=_STYLE_GUIDE.format(ticker=ticker),
                     articles_text=articles_text,
                 ),
                 model=model,
