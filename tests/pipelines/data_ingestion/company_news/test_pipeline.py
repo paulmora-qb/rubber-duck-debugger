@@ -14,6 +14,11 @@ from kedro.runner import SequentialRunner
 from rdd.pipelines.data_ingestion.company_news.pipeline import create_pipeline
 
 
+@pytest.fixture(autouse=True)
+def no_sleep(mocker):
+    mocker.patch("rdd.pipelines.data_ingestion.company_news.nodes.time.sleep")
+
+
 def _make_articles(ticker: str, n: int = 3) -> list[dict]:
     base_ts = int(pd.Timestamp("2024-01-02").timestamp())
     return [

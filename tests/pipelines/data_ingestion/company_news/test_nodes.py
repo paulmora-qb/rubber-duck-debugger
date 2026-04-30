@@ -17,6 +17,11 @@ from rdd.pipelines.data_ingestion.company_news.nodes import (
 )
 
 
+@pytest.fixture(autouse=True)
+def no_sleep(mocker):
+    mocker.patch("rdd.pipelines.data_ingestion.company_news.nodes.time.sleep")
+
+
 def _make_articles(ticker: str, n: int = 3, base_ts: int | None = None) -> list[dict]:
     if base_ts is None:
         base_ts = int(pd.Timestamp("2024-01-02").timestamp())
