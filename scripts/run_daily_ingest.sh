@@ -119,7 +119,7 @@ main() {
     sync_branch
   fi
 
-  run_pipeline data_ingestion
+  run_pipeline stock_prices
   run_pipeline company_info
   run_pipeline company_news
   run_pipeline company_financials
