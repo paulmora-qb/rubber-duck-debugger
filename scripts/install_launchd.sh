@@ -1,43 +1,47 @@
 #!/bin/bash
-# Installs the RDD daily ingest as a launchd agent at 10:00 local, Mon–Fri.
-# Unlike cron, launchd catches up missed runs when the machine wakes up.
-# Idempotent — safe to run multiple times.
+# Installs all RDD launchd agents. Idempotent — safe to run multiple times.
+#
+# Agents installed:
+#   com.rdd.daily-ingest      — Mon–Fri 10:00 local  (data ingestion)
+#   com.rdd.monthly-strategy  — 30th of each month 12:00 local  (claude_fundamental)
+#   com.rdd.weekly-performance — every Friday 12:00 local  (performance email)
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-RUNNER="$SCRIPT_DIR/run_daily_ingest.sh"
 LOG_DIR="$PROJECT_ROOT/logs"
-LABEL="com.rdd.daily-ingest"
-PLIST_DEST="$HOME/Library/LaunchAgents/$LABEL.plist"
+
+export PATH="/Users/Paul_Mora/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
 
 mkdir -p "$LOG_DIR"
 
-# Remove any existing cron entry for this job.
-CURRENT=$(crontab -l 2>/dev/null || true)
-CLEANED=$(echo "$CURRENT" | grep -v "rdd-daily-ingest" | grep -v "run_daily_ingest" || true)
-if [[ "$CLEANED" != "$CURRENT" ]]; then
-  echo "$CLEANED" | grep -v '^$' | crontab - 2>/dev/null || crontab -r 2>/dev/null || true
-  echo "Removed existing cron entry."
-fi
+install_agent() {
+  local label="$1"
+  local runner="$2"
+  local plist_body="$3"
+  local plist_dest="$HOME/Library/LaunchAgents/${label}.plist"
 
-# Generate the plist with resolved absolute paths.
-cat > "$PLIST_DEST" <<PLIST
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
+  echo "$plist_body" > "$plist_dest"
+  launchctl unload "$plist_dest" 2>/dev/null || true
+  launchctl load "$plist_dest"
+  echo "Installed: $label  →  $plist_dest"
+}
+
+# ── 1. Daily ingest — Mon–Fri 10:00 ──────────────────────────────────────────
+
+install_agent "com.rdd.daily-ingest" "$SCRIPT_DIR/run_daily_ingest.sh" \
+"<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">
+<plist version=\"1.0\">
 <dict>
-    <key>Label</key>
-    <string>$LABEL</string>
-
+    <key>Label</key><string>com.rdd.daily-ingest</string>
     <key>ProgramArguments</key>
     <array>
         <string>/bin/bash</string>
-        <string>$RUNNER</string>
+        <string>$SCRIPT_DIR/run_daily_ingest.sh</string>
     </array>
-
-    <!-- 10:00 local, weekdays only -->
+    <!-- Mon–Fri 10:00 local -->
     <key>StartCalendarInterval</key>
     <array>
         <dict><key>Weekday</key><integer>1</integer><key>Hour</key><integer>10</integer><key>Minute</key><integer>0</integer></dict>
@@ -46,27 +50,78 @@ cat > "$PLIST_DEST" <<PLIST
         <dict><key>Weekday</key><integer>4</integer><key>Hour</key><integer>10</integer><key>Minute</key><integer>0</integer></dict>
         <dict><key>Weekday</key><integer>5</integer><key>Hour</key><integer>10</integer><key>Minute</key><integer>0</integer></dict>
     </array>
-
     <key>EnvironmentVariables</key>
     <dict>
-        <key>PATH</key>
-        <string>/Users/Paul_Mora/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
-        <key>HOME</key>
-        <string>$HOME</string>
+        <key>PATH</key><string>/Users/Paul_Mora/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+        <key>HOME</key><string>$HOME</string>
     </dict>
-
-    <key>StandardOutPath</key>
-    <string>$LOG_DIR/launchd.log</string>
-    <key>StandardErrorPath</key>
-    <string>$LOG_DIR/launchd.log</string>
+    <key>StandardOutPath</key><string>$LOG_DIR/launchd.log</string>
+    <key>StandardErrorPath</key><string>$LOG_DIR/launchd.log</string>
 </dict>
-</plist>
-PLIST
+</plist>"
 
-# Reload the agent.
-launchctl unload "$PLIST_DEST" 2>/dev/null || true
-launchctl load "$PLIST_DEST"
+# ── 2. Monthly strategy — 1st 12:00 ──────────────────────────────────────────
 
-echo "Installed launchd agent: $LABEL"
-echo "Runs Mon–Fri at 10:00 local. Catches up missed runs on wake."
-echo "Plist: $PLIST_DEST"
+install_agent "com.rdd.monthly-strategy" "$SCRIPT_DIR/run_monthly_strategy.sh" \
+"<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">
+<plist version=\"1.0\">
+<dict>
+    <key>Label</key><string>com.rdd.monthly-strategy</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>$SCRIPT_DIR/run_monthly_strategy.sh</string>
+    </array>
+    <!-- 1st of each month at 12:00 local -->
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Day</key><integer>1</integer>
+        <key>Hour</key><integer>12</integer>
+        <key>Minute</key><integer>0</integer>
+    </dict>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key><string>/Users/Paul_Mora/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+        <key>HOME</key><string>$HOME</string>
+    </dict>
+    <key>StandardOutPath</key><string>$LOG_DIR/monthly_strategy.log</string>
+    <key>StandardErrorPath</key><string>$LOG_DIR/monthly_strategy.log</string>
+</dict>
+</plist>"
+
+# ── 3. Weekly performance email — Friday 12:00 ───────────────────────────────
+
+install_agent "com.rdd.weekly-performance" "$SCRIPT_DIR/run_weekly_performance.sh" \
+"<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">
+<plist version=\"1.0\">
+<dict>
+    <key>Label</key><string>com.rdd.weekly-performance</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>$SCRIPT_DIR/run_weekly_performance.sh</string>
+    </array>
+    <!-- Every Friday at 12:00 local -->
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Weekday</key><integer>5</integer>
+        <key>Hour</key><integer>12</integer>
+        <key>Minute</key><integer>0</integer>
+    </dict>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key><string>/Users/Paul_Mora/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+        <key>HOME</key><string>$HOME</string>
+    </dict>
+    <key>StandardOutPath</key><string>$LOG_DIR/weekly_performance.log</string>
+    <key>StandardErrorPath</key><string>$LOG_DIR/weekly_performance.log</string>
+</dict>
+</plist>"
+
+echo ""
+echo "All agents installed. Schedule summary:"
+echo "  Daily ingest    → Mon–Fri 10:00 local"
+echo "  Monthly strategy → 1st of each month 12:00 local"
+echo "  Weekly performance → every Friday 12:00 local"

@@ -1,4 +1,4 @@
-"""Nodes for the portfolio_construction pipeline (Claude agent-driven).
+"""Nodes for the ai_fundamental_screen strategy pipeline (Claude agent-driven).
 
 Three-stage decision flow:
   1. score_tickers   — Haiku scores every ticker in the universe (~$0.80/month)

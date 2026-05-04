@@ -69,6 +69,9 @@ def _make_ohlcv(
 # ── compute_strategy_returns ──────────────────────────────────────────────────
 
 
+_WIDE_PARAMS = {"lookback_months": 60}  # wide window so fixture dates are always included
+
+
 class TestComputeStrategyReturns:
     def test_returns_daily_series(self) -> None:
         holdings_df = _make_holdings()
@@ -77,6 +80,7 @@ class TestComputeStrategyReturns:
             holdings_existing={"2024-01-01": lambda: holdings_df},
             ohlcv_existing={"aapl": lambda: ohlcv_df[ohlcv_df["ticker"] == "AAPL"],
                             "msft": lambda: ohlcv_df[ohlcv_df["ticker"] == "MSFT"]},
+            params=_WIDE_PARAMS,
         )
         assert "date" in result.columns
         assert "portfolio_return" in result.columns
@@ -86,6 +90,7 @@ class TestComputeStrategyReturns:
         result = compute_strategy_returns(
             holdings_existing={},
             ohlcv_existing={"aapl": lambda: _make_ohlcv(["AAPL"])},
+            params=_WIDE_PARAMS,
         )
         assert result.empty
 
@@ -94,6 +99,7 @@ class TestComputeStrategyReturns:
         result = compute_strategy_returns(
             holdings_existing={"2024-01-01": lambda: holdings_df},
             ohlcv_existing={},
+            params=_WIDE_PARAMS,
         )
         assert result.empty
 
@@ -107,10 +113,28 @@ class TestComputeStrategyReturns:
                 "aapl": lambda: ohlcv_df[ohlcv_df["ticker"] == "AAPL"],
                 "msft": lambda: ohlcv_df[ohlcv_df["ticker"] == "MSFT"],
             },
+            params=_WIDE_PARAMS,
         )
         non_nan = result["portfolio_return"].dropna()
         assert non_nan.notna().all()
         assert (non_nan.abs() < 0.05).all()
+
+    def test_lookback_filters_old_data(self) -> None:
+        """Returns outside the lookback window are excluded."""
+        today = pd.Timestamp.now().normalize()
+        recent_date = (today - pd.DateOffset(months=1)).strftime("%Y-%m-%d")
+        holdings_df = _make_holdings(date=recent_date)
+        ohlcv_df = _make_ohlcv(start=recent_date, periods=5)
+        result = compute_strategy_returns(
+            holdings_existing={recent_date: lambda: holdings_df},
+            ohlcv_existing={
+                "aapl": lambda: ohlcv_df[ohlcv_df["ticker"] == "AAPL"],
+                "msft": lambda: ohlcv_df[ohlcv_df["ticker"] == "MSFT"],
+            },
+            params={"lookback_months": 3},
+        )
+        assert len(result) > 0
+        assert result["date"].min() >= today - pd.DateOffset(months=3)
 
 
 # ── compute_performance_metrics ───────────────────────────────────────────────
@@ -201,6 +225,7 @@ class TestSendPerformanceEmail:
             send_performance_email(self._report(), params=params)
 
     def test_html_contains_strategy_name(self) -> None:
-        html = _build_html(self._report())
-        assert "portfolio_construction" in html
+        html = _build_html(self._report(), chart_b64="", holdings_html="")
+        # _fmt_strategy_name converts "portfolio_construction" → "Portfolio Construction"
+        assert "Portfolio Construction" in html
         assert "<table" in html

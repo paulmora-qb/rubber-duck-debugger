@@ -8,7 +8,7 @@ from unittest.mock import MagicMock
 import pandas as pd
 import pytest
 
-from rdd.pipelines.strategies.claude_fundamental.nodes import (
+from rdd.pipelines.strategies.ai_fundamental_screen.nodes import (
     _build_ticker_brief,
     construct_portfolio,
     rebalance_portfolio,
@@ -172,7 +172,7 @@ def _mock_claude(mocker, response: str) -> MagicMock:
     mock_msg.content = [MagicMock(text=response)]
     mock_client.messages.create.return_value = mock_msg
     mocker.patch(
-        "rdd.pipelines.strategies.claude_fundamental.nodes.anthropic.Anthropic",
+        "rdd.pipelines.strategies.ai_fundamental_screen.nodes.anthropic.Anthropic",
         return_value=mock_client,
     )
     return mock_client
@@ -264,7 +264,7 @@ class TestScoreTickers:
         mock_client = MagicMock()
         mock_client.messages.create.side_effect = RuntimeError("API error")
         mocker.patch(
-            "rdd.pipelines.strategies.claude_fundamental.nodes.anthropic.Anthropic",
+            "rdd.pipelines.strategies.ai_fundamental_screen.nodes.anthropic.Anthropic",
             return_value=mock_client,
         )
         result = score_tickers(

@@ -19,7 +19,7 @@ from rdd.pipelines.strategies.portfolio_performance.nodes import (
 _BASE_NODES = [
     node(
         func=compute_strategy_returns,
-        inputs=["holdings_existing", "ohlcv_existing"],
+        inputs=["holdings_existing", "ohlcv_existing", "params:portfolio_performance"],
         outputs="daily_returns",
         name="compute_strategy_returns",
     ),
@@ -37,6 +37,7 @@ def _variant_pipeline(namespace: str) -> Pipeline:
     return pipeline(
         Pipeline(_BASE_NODES),
         inputs={"ohlcv_existing": "raw_ohlcv_existing"},
+        parameters={"params:portfolio_performance": "params:portfolio_performance"},
         namespace=namespace,
     )
 
@@ -47,19 +48,29 @@ def create_pipeline(variants: list[str] | None = None, **_kwargs) -> Pipeline:
     Args:
         variants: List of strategy names.  Each must have a catalog entry
             ``{variant}.holdings_existing`` (NullablePartitionedDataset).
-            Defaults to ``["claude_fundamental"]``.
+            Defaults to ``["ai_fundamental_screen"]``.
 
     Returns:
         Combined pipeline that computes per-strategy metrics then emails a
-        weekly comparison report.
+        weekly report with cumulative-return chart, holdings breakdown, and KPIs.
     """
     if not variants:
-        variants = ["claude_fundamental"]
+        variants = ["ai_fundamental_screen"]
 
     variant_pipelines: Pipeline = sum(
         (_variant_pipeline(v) for v in variants),
         Pipeline([]),
     )
+
+    # Pass per-strategy daily_returns and holdings_existing into the email node
+    # so it can render the chart and holdings breakdown.
+    email_inputs: dict[str, str] = {
+        "report": "performance_report",
+        "params": "params:portfolio_performance",
+    }
+    for v in variants:
+        email_inputs[f"{v}_returns"] = f"{v}.daily_returns"
+        email_inputs[f"{v}_holdings"] = f"{v}.holdings_existing"
 
     shared_nodes = Pipeline(
         [
@@ -71,7 +82,7 @@ def create_pipeline(variants: list[str] | None = None, **_kwargs) -> Pipeline:
             ),
             node(
                 func=send_performance_email,
-                inputs=["performance_report", "params:portfolio_performance"],
+                inputs=email_inputs,
                 outputs=None,
                 name="send_performance_email",
             ),

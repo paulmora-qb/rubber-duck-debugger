@@ -1,8 +1,8 @@
-"""Claude Fundamental strategy pipeline — three Claude agent stages."""
+"""AI Fundamental Screen strategy pipeline — three Claude agent stages."""
 
 from kedro.pipeline import Pipeline, node
 
-from rdd.pipelines.strategies.claude_fundamental.nodes import (
+from rdd.pipelines.strategies.ai_fundamental_screen.nodes import (
     construct_portfolio,
     rebalance_portfolio,
     record_holdings,
@@ -11,7 +11,7 @@ from rdd.pipelines.strategies.claude_fundamental.nodes import (
 
 
 def create_pipeline(**_kwargs) -> Pipeline:
-    """Create the claude_fundamental strategy pipeline."""
+    """Create the ai_fundamental_screen strategy pipeline."""
     return Pipeline(
         nodes=[
             node(
@@ -24,7 +24,7 @@ def create_pipeline(**_kwargs) -> Pipeline:
                     "raw_company_financials_quarterly_existing",
                     "stock_analyses",
                     "raw_news_analysis_existing",
-                    "params:claude_fundamental",
+                    "params:ai_fundamental_screen",
                 ],
                 outputs="portfolio_ticker_scores",
                 name="score_tickers",
@@ -34,7 +34,7 @@ def create_pipeline(**_kwargs) -> Pipeline:
                 inputs=[
                     "portfolio_ticker_scores",
                     "raw_company_info",
-                    "params:claude_fundamental",
+                    "params:ai_fundamental_screen",
                 ],
                 outputs="portfolio_allocation",
                 name="construct_portfolio",
@@ -45,7 +45,7 @@ def create_pipeline(**_kwargs) -> Pipeline:
                     "portfolio_allocation",
                     "live_portfolio",
                     "portfolio_ticker_scores",
-                    "params:claude_fundamental",
+                    "params:ai_fundamental_screen",
                 ],
                 outputs="portfolio_trades",
                 name="rebalance_portfolio",
@@ -54,9 +54,9 @@ def create_pipeline(**_kwargs) -> Pipeline:
                 func=record_holdings,
                 inputs=[
                     "portfolio_allocation",
-                    "params:claude_fundamental",
+                    "params:ai_fundamental_screen",
                 ],
-                outputs="claude_fundamental.holdings",
+                outputs="ai_fundamental_screen.holdings",
                 name="record_holdings",
             ),
         ]
