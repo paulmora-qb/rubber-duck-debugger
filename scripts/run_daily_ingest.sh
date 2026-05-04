@@ -18,6 +18,7 @@ LOG_DIR="$PROJECT_ROOT/logs"
 LOG_FILE="$LOG_DIR/daily_ingest.log"
 DRY_RUN=false
 CRON_BRANCH="main"
+_DONE=false
 
 export PATH="/Users/Paul_Mora/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
 
@@ -32,6 +33,23 @@ ts() { date -u "+%Y-%m-%dT%H:%M:%SZ"; }
 log() {
   echo "[$(ts)] $*" | tee -a "$LOG_FILE"
 }
+
+_on_exit() {
+  local rc=$?
+  if [[ $rc -ne 0 ]] && ! $_DONE; then
+    log "[ALERT] script exited early (exit $rc) — sending failure alert..."
+    if [[ -f "$PROJECT_ROOT/.env" ]] && [[ -z "${RDD_SMTP_USER:-}" ]]; then
+      set -a
+      # shellcheck source=/dev/null
+      source "$PROJECT_ROOT/.env"
+      set +a
+    fi
+    (cd "$PROJECT_ROOT" && uv run python scripts/send_alert.py \
+      --subject "[RDD] run_daily_ingest.sh crashed (exit $rc)" \
+      --log "$LOG_FILE") >> "$LOG_FILE" 2>&1 || true
+  fi
+}
+trap '_on_exit' EXIT
 
 # Parallel arrays collecting results for the email report.
 PIPELINE_NAMES=()
@@ -133,6 +151,7 @@ main() {
     send_report
   fi
 
+  _DONE=true
   log "=== [DONE] ==="
 }
 
