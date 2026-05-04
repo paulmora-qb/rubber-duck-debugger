@@ -101,8 +101,8 @@ send_report() {
 sync_branch() {
   log "[GIT] syncing to $CRON_BRANCH..."
   git -C "$PROJECT_ROOT" fetch origin "$CRON_BRANCH" >> "$LOG_FILE" 2>&1
-  git -C "$PROJECT_ROOT" checkout "$CRON_BRANCH" >> "$LOG_FILE" 2>&1
-  git -C "$PROJECT_ROOT" pull --ff-only origin "$CRON_BRANCH" >> "$LOG_FILE" 2>&1
+  git -C "$PROJECT_ROOT" checkout -f "$CRON_BRANCH" >> "$LOG_FILE" 2>&1
+  git -C "$PROJECT_ROOT" reset --hard "origin/$CRON_BRANCH" >> "$LOG_FILE" 2>&1
   log "[GIT] HEAD=$(git -C "$PROJECT_ROOT" rev-parse --short HEAD)"
 }
 
