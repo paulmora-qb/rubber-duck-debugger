@@ -10,8 +10,16 @@ from rdd.pipelines.strategies.ai_fundamental_screen.nodes import (
 )
 
 
-def create_pipeline(**_kwargs) -> Pipeline:
-    """Create the ai_fundamental_screen strategy pipeline."""
+def create_pipeline(variant: str = "monthly", **_kwargs) -> Pipeline:
+    """Create the ai_fundamental_screen strategy pipeline.
+
+    Args:
+        variant: Strategy cadence — ``"monthly"`` (1st of month) or
+            ``"weekly"`` (every Friday).  Each variant has its own catalog
+            entries, params file, and holdings path so they are tracked
+            independently.
+    """
+    name = f"ai_fundamental_screen_{variant}"
     return Pipeline(
         nodes=[
             node(
@@ -24,39 +32,39 @@ def create_pipeline(**_kwargs) -> Pipeline:
                     "raw_company_financials_quarterly_existing",
                     "stock_analyses",
                     "raw_news_analysis_existing",
-                    "params:ai_fundamental_screen",
+                    f"params:{name}",
                 ],
-                outputs="portfolio_ticker_scores",
+                outputs=f"{name}_ticker_scores",
                 name="score_tickers",
             ),
             node(
                 func=construct_portfolio,
                 inputs=[
-                    "portfolio_ticker_scores",
+                    f"{name}_ticker_scores",
                     "raw_company_info",
-                    "params:ai_fundamental_screen",
+                    f"params:{name}",
                 ],
-                outputs="portfolio_allocation",
+                outputs=f"{name}_allocation",
                 name="construct_portfolio",
             ),
             node(
                 func=rebalance_portfolio,
                 inputs=[
-                    "portfolio_allocation",
+                    f"{name}_allocation",
                     "live_portfolio",
-                    "portfolio_ticker_scores",
-                    "params:ai_fundamental_screen",
+                    f"{name}_ticker_scores",
+                    f"params:{name}",
                 ],
-                outputs="portfolio_trades",
+                outputs=f"{name}_trades",
                 name="rebalance_portfolio",
             ),
             node(
                 func=record_holdings,
                 inputs=[
-                    "portfolio_allocation",
-                    "params:ai_fundamental_screen",
+                    f"{name}_allocation",
+                    f"params:{name}",
                 ],
-                outputs="ai_fundamental_screen.holdings",
+                outputs=f"{name}.holdings",
                 name="record_holdings",
             ),
         ]

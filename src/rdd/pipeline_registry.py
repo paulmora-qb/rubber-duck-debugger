@@ -48,10 +48,13 @@ def register_pipelines() -> dict[str, Pipeline]:
     eh = earnings_history()
     sg = signals()
     na = news_analysis()
-    afs = ai_fundamental_screen()
-    pp = portfolio_performance(variants=["ai_fundamental_screen"])
+    afs_monthly = ai_fundamental_screen(variant="monthly")
+    afs_weekly = ai_fundamental_screen(variant="weekly")
+    pp = portfolio_performance(
+        variants=["ai_fundamental_screen_monthly", "ai_fundamental_screen_weekly"]
+    )
     return {
-        "__default__": sp + ci + cn + cf + vr + ac + eh + sg + na + afs + pp,
+        "__default__": sp + ci + cn + cf + vr + ac + eh + sg + na + afs_monthly + afs_weekly + pp,
         "stock_prices": sp,
         "company_info": ci,
         "company_news": cn,
@@ -61,6 +64,7 @@ def register_pipelines() -> dict[str, Pipeline]:
         "earnings_history": eh,
         "signals": sg,
         "news_analysis": na,
-        "ai_fundamental_screen": afs,
+        "ai_fundamental_screen_monthly": afs_monthly,
+        "ai_fundamental_screen_weekly": afs_weekly,
         "portfolio_performance": pp,
     }

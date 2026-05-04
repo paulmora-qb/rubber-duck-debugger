@@ -19,13 +19,13 @@ def set_api_key(monkeypatch) -> None:
 
 @pytest.fixture
 def pipeline():
-    return create_pipeline()
+    return create_pipeline(variant="monthly")
 
 
 @pytest.fixture
 def params() -> dict[str, Any]:
     return {
-        "strategy_name": "ai_fundamental_screen",
+        "strategy_name": "ai_fundamental_screen_monthly",
         "model_screening": "claude-haiku-4-5-20251001",
         "model_selection": "claude-sonnet-4-6",
         "model_rebalancing": "claude-haiku-4-5-20251001",
@@ -114,11 +114,11 @@ def _make_catalog(params: dict) -> DataCatalog:
             "stock_analyses": MemoryDataset(data={}),
             "raw_news_analysis_existing": MemoryDataset(data={}),
             "live_portfolio": MemoryDataset(data={}),
-            "portfolio_ticker_scores": MemoryDataset(),
-            "portfolio_allocation": MemoryDataset(),
-            "portfolio_trades": MemoryDataset(),
-            "ai_fundamental_screen.holdings": MemoryDataset(),
-            "params:ai_fundamental_screen": MemoryDataset(data=params),
+            "ai_fundamental_screen_monthly_ticker_scores": MemoryDataset(),
+            "ai_fundamental_screen_monthly_allocation": MemoryDataset(),
+            "ai_fundamental_screen_monthly_trades": MemoryDataset(),
+            "ai_fundamental_screen_monthly.holdings": MemoryDataset(),
+            "params:ai_fundamental_screen_monthly": MemoryDataset(data=params),
         }
     )
 
@@ -128,7 +128,7 @@ def test_pipeline_runs_successfully(mocker, pipeline, params) -> None:
     catalog = _make_catalog(params)
     SequentialRunner().run(pipeline, catalog)
 
-    trades = catalog.load("portfolio_trades")
+    trades = catalog.load("ai_fundamental_screen_monthly_trades")
     assert "trades" in trades
     assert "rebalanced_at" in trades
 
@@ -138,7 +138,7 @@ def test_pipeline_first_run_all_buys(mocker, pipeline, params) -> None:
     catalog = _make_catalog(params)
     SequentialRunner().run(pipeline, catalog)
 
-    trades = catalog.load("portfolio_trades")
+    trades = catalog.load("ai_fundamental_screen_monthly_trades")
     assert all(t["action"] == "BUY" for t in trades["trades"])
 
 
@@ -150,6 +150,6 @@ def test_portfolio_allocation_has_required_keys(mocker, pipeline, params) -> Non
     partial = pipeline.filter(to_nodes=["construct_portfolio"])
     SequentialRunner().run(partial, catalog)
 
-    allocation = catalog.load("portfolio_allocation")
+    allocation = catalog.load("ai_fundamental_screen_monthly_allocation")
     assert "holdings" in allocation
     assert "generated_at" in allocation

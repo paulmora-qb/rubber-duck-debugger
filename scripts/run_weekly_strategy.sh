@@ -1,5 +1,5 @@
 #!/bin/bash
-# Runs the ai_fundamental_screen_monthly strategy pipeline on the 1st of each month.
+# Runs the ai_fundamental_screen_weekly strategy pipeline every Friday at 12:00 local.
 # Sources .env and syncs to main before running.
 
 set -euo pipefail
@@ -7,7 +7,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 LOG_DIR="$PROJECT_ROOT/logs"
-LOG_FILE="$LOG_DIR/monthly_strategy.log"
+LOG_FILE="$LOG_DIR/weekly_strategy.log"
 
 export PATH="/Users/Paul_Mora/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
 
@@ -27,7 +27,7 @@ _on_exit() {
     set +a
   fi
   (cd "$PROJECT_ROOT" && uv run python scripts/send_alert.py \
-    --subject "[RDD] run_monthly_strategy.sh FAILED (exit $rc)" \
+    --subject "[RDD] run_weekly_strategy.sh FAILED (exit $rc)" \
     --log "$LOG_FILE") >> "$LOG_FILE" 2>&1 || true
 }
 trap '_on_exit' EXIT
@@ -40,13 +40,13 @@ main() {
     set +a
   fi
 
-  log "=== monthly strategy run start ==="
+  log "=== weekly strategy run start ==="
   git -C "$PROJECT_ROOT" fetch origin main >> "$LOG_FILE" 2>&1
   git -C "$PROJECT_ROOT" checkout -f main >> "$LOG_FILE" 2>&1
   git -C "$PROJECT_ROOT" reset --hard origin/main >> "$LOG_FILE" 2>&1
   log "[GIT] HEAD=$(git -C "$PROJECT_ROOT" rev-parse --short HEAD)"
 
-  (cd "$PROJECT_ROOT" && uv run kedro run --pipeline ai_fundamental_screen_monthly) >> "$LOG_FILE" 2>&1
+  (cd "$PROJECT_ROOT" && uv run kedro run --pipeline ai_fundamental_screen_weekly) >> "$LOG_FILE" 2>&1
   log "=== [DONE] ==="
 }
 

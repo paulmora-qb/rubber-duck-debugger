@@ -1,6 +1,20 @@
-ai_fundamental_screen.holdings:
+# ── ai_fundamental_screen_monthly ────────────────────────────────────────────
+
+ai_fundamental_screen_monthly_ticker_scores:
+  type: kedro_datasets.json.JSONDataset
+  filepath: "${globals:data_dir}portfolio/ai_fundamental_screen_monthly/ticker_scores.json"
+
+ai_fundamental_screen_monthly_allocation:
+  type: kedro_datasets.json.JSONDataset
+  filepath: "${globals:data_dir}portfolio/ai_fundamental_screen_monthly/allocation.json"
+
+ai_fundamental_screen_monthly_trades:
+  type: kedro_datasets.json.JSONDataset
+  filepath: "${globals:data_dir}portfolio/ai_fundamental_screen_monthly/trades.json"
+
+ai_fundamental_screen_monthly.holdings:
   type: kedro_datasets.partitions.PartitionedDataset
-  path: ${globals:data_dir}portfolio/holdings/ai_fundamental_screen
+  path: ${globals:data_dir}portfolio/holdings/ai_fundamental_screen_monthly
   dataset:
     type: pandas.ParquetDataset
   filename_suffix: ".parquet"
@@ -12,9 +26,9 @@ ai_fundamental_screen.holdings:
         type: python.model
         object_path: rdd.schemas.portfolio_holdings.PortfolioHoldingsSchema
 
-ai_fundamental_screen.holdings_existing:
+ai_fundamental_screen_monthly.holdings_existing:
   type: rdd.datasets.nullable_partitioned.NullablePartitionedDataset
-  path: ${globals:data_dir}portfolio/holdings/ai_fundamental_screen
+  path: ${globals:data_dir}portfolio/holdings/ai_fundamental_screen_monthly
   dataset:
     type: pandas.ParquetDataset
   filename_suffix: ".parquet"
@@ -22,23 +36,51 @@ ai_fundamental_screen.holdings_existing:
     kedro-viz:
       layer: portfolio
 
-portfolio_ticker_scores:
-  type: kedro_datasets.json.JSONDataset
-  filepath: "${globals:data_dir}portfolio/ticker_scores.json"
+# ── ai_fundamental_screen_weekly ─────────────────────────────────────────────
 
-portfolio_allocation:
+ai_fundamental_screen_weekly_ticker_scores:
   type: kedro_datasets.json.JSONDataset
-  filepath: "${globals:data_dir}portfolio/allocation.json"
+  filepath: "${globals:data_dir}portfolio/ai_fundamental_screen_weekly/ticker_scores.json"
+
+ai_fundamental_screen_weekly_allocation:
+  type: kedro_datasets.json.JSONDataset
+  filepath: "${globals:data_dir}portfolio/ai_fundamental_screen_weekly/allocation.json"
+
+ai_fundamental_screen_weekly_trades:
+  type: kedro_datasets.json.JSONDataset
+  filepath: "${globals:data_dir}portfolio/ai_fundamental_screen_weekly/trades.json"
+
+ai_fundamental_screen_weekly.holdings:
+  type: kedro_datasets.partitions.PartitionedDataset
+  path: ${globals:data_dir}portfolio/holdings/ai_fundamental_screen_weekly
+  dataset:
+    type: pandas.ParquetDataset
+  filename_suffix: ".parquet"
+  metadata:
+    kedro-viz:
+      layer: portfolio
+    pandera:
+      schema:
+        type: python.model
+        object_path: rdd.schemas.portfolio_holdings.PortfolioHoldingsSchema
+
+ai_fundamental_screen_weekly.holdings_existing:
+  type: rdd.datasets.nullable_partitioned.NullablePartitionedDataset
+  path: ${globals:data_dir}portfolio/holdings/ai_fundamental_screen_weekly
+  dataset:
+    type: pandas.ParquetDataset
+  filename_suffix: ".parquet"
+  metadata:
+    kedro-viz:
+      layer: portfolio
+
+# ── Shared ────────────────────────────────────────────────────────────────────
 
 # live_portfolio is maintained externally (updated after trades are executed).
 # Returns {} on first run so the pipeline treats it as no prior holdings.
 live_portfolio:
   type: rdd.datasets.nullable_json.NullableJSONDataset
   filepath: "${globals:data_dir}portfolio/live_portfolio.json"
-
-portfolio_trades:
-  type: kedro_datasets.json.JSONDataset
-  filepath: "${globals:data_dir}portfolio/trades.json"
 
 performance_report:
   type: pandas.ParquetDataset

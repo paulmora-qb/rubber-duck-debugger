@@ -1,15 +1,14 @@
-ai_fundamental_screen:
+ai_fundamental_screen_weekly:
   # ── Strategy metadata ──────────────────────────────────────────────────────
-  strategy_name: "ai_fundamental_screen"
+  strategy_name: "ai_fundamental_screen_weekly"
 
   # Description: Claude-powered fundamental screen that ranks ~500 S&P 500
-  # tickers each month using valuation ratios (P/E, P/B, EV/EBITDA), Wall
+  # tickers every week using valuation ratios (P/E, P/B, EV/EBITDA), Wall
   # Street analyst consensus, earnings history, quarterly financials, and
   # recent news sentiment. Haiku scores every ticker; Sonnet then selects a
   # concentrated 10-stock portfolio with conviction-weighted positions (5–20%
   # per holding, ≤35% per industry). Haiku produces the final trade list
-  # relative to the live portfolio. Weights are updated once per month on the
-  # 1st. Last adjustment: 2026-04-30.
+  # relative to the live portfolio. Weights are updated every Friday.
 
   # ── Models ────────────────────────────────────────────────────────────────
   model_screening: "claude-haiku-4-5-20251001"
@@ -26,4 +25,4 @@ ai_fundamental_screen:
   min_position_weight: 0.05
   max_position_weight: 0.20
   continuity_bonus: 0.08
-  refresh_hours: 720
+  refresh_hours: 168

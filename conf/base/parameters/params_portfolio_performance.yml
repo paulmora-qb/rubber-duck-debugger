@@ -1,11 +1,12 @@
 portfolio_performance:
   strategy_variants:
-    - ai_fundamental_screen
+    - ai_fundamental_screen_monthly
+    - ai_fundamental_screen_weekly
   lookback_months: 3
   benchmark_ticker: "SPY"
   risk_free_rate: 0.0
   strategy_descriptions:
-    ai_fundamental_screen: >
+    ai_fundamental_screen_monthly: >
       Claude-powered fundamental screen of ~500 S&P 500 tickers. Each month,
       Claude Haiku scores every ticker using valuation ratios (P/E, P/B,
       EV/EBITDA), Wall Street analyst consensus, earnings history, quarterly
@@ -13,6 +14,12 @@ portfolio_performance:
       concentrated 10-stock portfolio with conviction-weighted positions
       (5–20% per holding, max 35% per industry). Weights are rebalanced once
       per month on the 1st.
+    ai_fundamental_screen_weekly: >
+      Same Claude-powered fundamental screen as the monthly variant but
+      rebalanced every Friday, allowing the engine to react to each week's
+      news analysis and market developments. Tighter turnover cadence with
+      the same position-sizing constraints (5–20% per holding, max 35% per
+      industry).
   # SMTP credentials fall back to RDD_* env vars if left blank here.
   email_to: ""
   smtp_host: ""
