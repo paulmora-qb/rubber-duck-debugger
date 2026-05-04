@@ -1,4 +1,4 @@
-"""Integration tests for the portfolio_construction pipeline."""
+"""Integration tests for the ai_fundamental_screen pipeline."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ import pytest
 from kedro.io import DataCatalog, MemoryDataset
 from kedro.runner import SequentialRunner
 
-from rdd.pipelines.strategies.claude_fundamental.pipeline import create_pipeline
+from rdd.pipelines.strategies.ai_fundamental_screen.pipeline import create_pipeline
 
 
 @pytest.fixture(autouse=True)
@@ -25,7 +25,7 @@ def pipeline():
 @pytest.fixture
 def params() -> dict[str, Any]:
     return {
-        "strategy_name": "claude_fundamental",
+        "strategy_name": "ai_fundamental_screen",
         "model_screening": "claude-haiku-4-5-20251001",
         "model_selection": "claude-sonnet-4-6",
         "model_rebalancing": "claude-haiku-4-5-20251001",
@@ -76,7 +76,7 @@ def _mock_claude_responses(mocker) -> None:
     mock_client = mocker.MagicMock()
     mock_client.messages.create.side_effect = _side_effect
     mocker.patch(
-        "rdd.pipelines.strategies.claude_fundamental.nodes.anthropic.Anthropic",
+        "rdd.pipelines.strategies.ai_fundamental_screen.nodes.anthropic.Anthropic",
         return_value=mock_client,
     )
 
@@ -117,8 +117,8 @@ def _make_catalog(params: dict) -> DataCatalog:
             "portfolio_ticker_scores": MemoryDataset(),
             "portfolio_allocation": MemoryDataset(),
             "portfolio_trades": MemoryDataset(),
-            "claude_fundamental.holdings": MemoryDataset(),
-            "params:claude_fundamental": MemoryDataset(data=params),
+            "ai_fundamental_screen.holdings": MemoryDataset(),
+            "params:ai_fundamental_screen": MemoryDataset(data=params),
         }
     )
 

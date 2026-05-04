@@ -1,6 +1,6 @@
-claude_fundamental.holdings:
+ai_fundamental_screen.holdings:
   type: kedro_datasets.partitions.PartitionedDataset
-  path: ${globals:data_dir}portfolio/holdings/claude_fundamental
+  path: ${globals:data_dir}portfolio/holdings/ai_fundamental_screen
   dataset:
     type: pandas.ParquetDataset
   filename_suffix: ".parquet"
@@ -12,9 +12,9 @@ claude_fundamental.holdings:
         type: python.model
         object_path: rdd.schemas.portfolio_holdings.PortfolioHoldingsSchema
 
-claude_fundamental.holdings_existing:
+ai_fundamental_screen.holdings_existing:
   type: rdd.datasets.nullable_partitioned.NullablePartitionedDataset
-  path: ${globals:data_dir}portfolio/holdings/claude_fundamental
+  path: ${globals:data_dir}portfolio/holdings/ai_fundamental_screen
   dataset:
     type: pandas.ParquetDataset
   filename_suffix: ".parquet"

@@ -1,8 +1,18 @@
 portfolio_performance:
   strategy_variants:
-    - claude_fundamental
+    - ai_fundamental_screen
+  lookback_months: 3
   benchmark_ticker: "SPY"
   risk_free_rate: 0.0
+  strategy_descriptions:
+    ai_fundamental_screen: >
+      Claude-powered fundamental screen of ~500 S&P 500 tickers. Each month,
+      Claude Haiku scores every ticker using valuation ratios (P/E, P/B,
+      EV/EBITDA), Wall Street analyst consensus, earnings history, quarterly
+      financials, and recent news sentiment. Claude Sonnet then selects a
+      concentrated 10-stock portfolio with conviction-weighted positions
+      (5–20% per holding, max 35% per industry). Weights are rebalanced once
+      per month on the 1st.
   # SMTP credentials fall back to RDD_* env vars if left blank here.
   email_to: ""
   smtp_host: ""
