@@ -329,7 +329,11 @@ def _make_chart(history: dict[date, dict], membership: dict[str, set[str]]) -> b
 def _make_company_info_chart(history: dict[date, dict], universe_size: int) -> bytes:
     """Render company info snapshot coverage over time as a PNG."""
     today = date.today()
-    dates = sorted(d for d in history if d <= today)
+    # Exclude OHLCV-backfill entries that have no company-info data (n_company_info == 0
+    # on those entries is a default, not a real observation).
+    dates = sorted(
+        d for d in history if d <= today and history[d].get("n_company_info", 0) > 0
+    )
     counts = [history[d].get("n_company_info", 0) for d in dates]
 
     fig, ax = plt.subplots(figsize=(10, 3))
@@ -368,7 +372,13 @@ def _make_company_info_chart(history: dict[date, dict], universe_size: int) -> b
 def _make_company_news_chart(history: dict[date, dict]) -> bytes:
     """Render company news coverage over time (tickers covered + cumulative articles)."""
     today = date.today()
-    dates = sorted(d for d in history if d <= today)
+    # Exclude OHLCV-backfill entries that have no news data (n_company_news_tickers == 0
+    # on those entries is a default, not a real observation).
+    dates = sorted(
+        d
+        for d in history
+        if d <= today and history[d].get("n_company_news_tickers", 0) > 0
+    )
     tickers = [history[d].get("n_company_news_tickers", 0) for d in dates]
     articles = [history[d].get("n_company_news_articles", 0) for d in dates]
 
