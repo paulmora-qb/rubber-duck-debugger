@@ -1,5 +1,5 @@
 #!/bin/bash
-# Runs the news_analysis pipeline once per month (scheduled for the 26th).
+# Runs the news_analysis pipeline every Friday at 12:00 local.
 # Sources .env and syncs to main before running.
 
 set -euo pipefail
@@ -7,7 +7,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 LOG_DIR="$PROJECT_ROOT/logs"
-LOG_FILE="$LOG_DIR/monthly_news_analysis.log"
+LOG_FILE="$LOG_DIR/weekly_news_analysis.log"
 
 export PATH="/Users/Paul_Mora/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
 
@@ -27,7 +27,7 @@ _on_exit() {
     set +a
   fi
   (cd "$PROJECT_ROOT" && uv run python scripts/send_alert.py \
-    --subject "[RDD] run_monthly_news_analysis.sh FAILED (exit $rc)" \
+    --subject "[RDD] run_weekly_news_analysis.sh FAILED (exit $rc)" \
     --log "$LOG_FILE") >> "$LOG_FILE" 2>&1 || true
 }
 trap '_on_exit' EXIT
@@ -40,7 +40,7 @@ main() {
     set +a
   fi
 
-  log "=== monthly news analysis start ==="
+  log "=== weekly news analysis start ==="
   git -C "$PROJECT_ROOT" fetch origin main >> "$LOG_FILE" 2>&1
   git -C "$PROJECT_ROOT" checkout -f main >> "$LOG_FILE" 2>&1
   git -C "$PROJECT_ROOT" reset --hard origin/main >> "$LOG_FILE" 2>&1
