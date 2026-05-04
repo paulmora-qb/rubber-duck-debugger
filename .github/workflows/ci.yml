@@ -133,13 +133,13 @@ jobs:
       - uses: ./.github/actions/setup-python-uv
       - run: uv run --locked pytest tests/pipelines/feature_engineering/news_analysis
 
-  test-pipelines-portfolio-construction:
-    name: "Tests / Pipelines / portfolio_construction"
+  test-pipelines-strategies-portfolio:
+    name: "Tests / Pipelines / strategies/portfolio"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-python-uv
-      - run: uv run --locked pytest tests/pipelines/portfolio_construction
+      - run: uv run --locked pytest tests/pipelines/strategies
 
   test-schemas:
     name: "Tests / Schemas"
