@@ -1,7 +1,7 @@
 """Nodes for the portfolio_performance pipeline.
 
 Four-stage flow:
-  1. compute_strategy_returns  — join holdings × OHLCV → daily portfolio returns
+  1. compute_strategy_returns  — join holdings x OHLCV -> daily portfolio returns
   2. compute_performance_metrics — Sharpe, max drawdown, cumulative return
   3. compile_report             — merge all strategy metrics, returns, and holdings
   4. send_performance_email     — chart + breakdown + KPI table via SMTP
@@ -10,8 +10,10 @@ Four-stage flow:
 from __future__ import annotations
 
 import base64
+import contextlib
 import io
 import logging
+import math
 import os
 import smtplib
 from collections.abc import Callable
@@ -19,14 +21,14 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from typing import Any
 
-import matplotlib
+import matplotlib as mpl
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import pandas as pd
 
 from rdd.schemas.portfolio_holdings import PortfolioHoldingsSchema
 
-matplotlib.use("Agg")
+mpl.use("Agg")
 
 logger = logging.getLogger(__name__)
 
@@ -39,10 +41,8 @@ _TRADING_DAYS_PER_YEAR = 252
 def _load_ohlcv(ohlcv_existing: dict[str, Callable[[], pd.DataFrame]]) -> pd.DataFrame:
     frames = []
     for loader in ohlcv_existing.values():
-        try:
+        with contextlib.suppress(Exception):
             frames.append(loader())
-        except Exception:
-            pass
     if not frames:
         return pd.DataFrame(columns=["ticker", "date", "adj_close"])
     return pd.concat(frames, ignore_index=True)
@@ -53,10 +53,8 @@ def _load_holdings(
 ) -> pd.DataFrame:
     frames = []
     for loader in holdings_existing.values():
-        try:
+        with contextlib.suppress(Exception):
             frames.append(loader() if callable(loader) else loader)
-        except Exception:
-            pass
     if not frames:
         return pd.DataFrame(columns=["strategy", "date", "ticker", "weight"])
     df = pd.concat(frames, ignore_index=True)
@@ -163,14 +161,16 @@ def compute_performance_metrics(daily_returns: pd.DataFrame) -> pd.DataFrame:
     """
     if daily_returns.empty or "portfolio_return" not in daily_returns.columns:
         return pd.DataFrame(
-            [{
-                "cumulative_return": float("nan"),
-                "annualised_return": float("nan"),
-                "annualised_volatility": float("nan"),
-                "sharpe_ratio": float("nan"),
-                "max_drawdown": float("nan"),
-                "observation_days": 0,
-            }]
+            [
+                {
+                    "cumulative_return": float("nan"),
+                    "annualised_return": float("nan"),
+                    "annualised_volatility": float("nan"),
+                    "sharpe_ratio": float("nan"),
+                    "max_drawdown": float("nan"),
+                    "observation_days": 0,
+                }
+            ]
         )
 
     r = daily_returns["portfolio_return"].dropna()
@@ -187,14 +187,16 @@ def compute_performance_metrics(daily_returns: pd.DataFrame) -> pd.DataFrame:
     max_dd = drawdowns.min()
 
     return pd.DataFrame(
-        [{
-            "cumulative_return": round(cumulative, 6),
-            "annualised_return": round(ann_return, 6),
-            "annualised_volatility": round(ann_vol, 6),
-            "sharpe_ratio": round(sharpe, 4),
-            "max_drawdown": round(max_dd, 6),
-            "observation_days": n,
-        }]
+        [
+            {
+                "cumulative_return": round(cumulative, 6),
+                "annualised_return": round(ann_return, 6),
+                "annualised_volatility": round(ann_vol, 6),
+                "sharpe_ratio": round(sharpe, 4),
+                "max_drawdown": round(max_dd, 6),
+                "observation_days": n,
+            }
+        ]
     )
 
 
@@ -225,14 +227,14 @@ def compile_report(**strategy_metrics: pd.DataFrame) -> pd.DataFrame:
 
 
 def _fmt_pct(val: float, digits: int = 2) -> str:
-    if val != val:
+    if math.isnan(val):
         return "n/a"
     color = "green" if val >= 0 else "red"
     return f'<span style="color:{color}">{val * 100:+.{digits}f}%</span>'
 
 
 def _fmt_float(val: float, digits: int = 2) -> str:
-    if val != val:
+    if math.isnan(val):
         return "n/a"
     return f"{val:.{digits}f}"
 
@@ -289,7 +291,7 @@ def _holdings_table_html(holdings_by_strategy: dict[str, pd.DataFrame]) -> str:
         latest_date = df["date"].max()
         latest = df[df["date"] == latest_date].sort_values("weight", ascending=False)
         rows = "".join(
-            f"<tr><td>{r['ticker']}</td><td style='text-align:right'>{r['weight']*100:.1f}%</td></tr>"
+            f"<tr><td>{r['ticker']}</td><td style='text-align:right'>{r['weight'] * 100:.1f}%</td></tr>"
             for _, r in latest.iterrows()
         )
         sections.append(
@@ -401,7 +403,7 @@ def send_performance_email(
     """
     to_addr = params.get("email_to") or os.environ.get("RDD_EMAIL_TO", "")
     smtp_host = params.get("smtp_host") or os.environ.get("RDD_SMTP_HOST", "")
-    smtp_port = int(params.get("smtp_port") or os.environ.get("RDD_SMTP_PORT", 465))
+    smtp_port = int(params.get("smtp_port") or os.environ.get("RDD_SMTP_PORT", "465"))
     smtp_user = params.get("smtp_user") or os.environ.get("RDD_SMTP_USER", "")
     smtp_pass = params.get("smtp_pass") or os.environ.get("RDD_SMTP_PASS", "")
 
@@ -424,7 +426,9 @@ def send_performance_email(
     try:
         chart_b64 = _chart_png_b64(daily_returns_by_strategy)
     except Exception:
-        logger.warning("Chart generation failed — email will omit chart.", exc_info=True)
+        logger.warning(
+            "Chart generation failed — email will omit chart.", exc_info=True
+        )
         chart_b64 = ""
 
     holdings_html = _holdings_table_html(holdings_by_strategy)

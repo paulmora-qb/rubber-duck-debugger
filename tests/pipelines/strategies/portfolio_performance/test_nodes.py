@@ -3,11 +3,9 @@
 from __future__ import annotations
 
 import math
-from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pandas as pd
-import pytest
 
 from rdd.pipelines.strategies.portfolio_performance.nodes import (
     _build_html,
@@ -16,7 +14,6 @@ from rdd.pipelines.strategies.portfolio_performance.nodes import (
     compute_strategy_returns,
     send_performance_email,
 )
-
 
 # ── fixtures ──────────────────────────────────────────────────────────────────
 
@@ -69,7 +66,9 @@ def _make_ohlcv(
 # ── compute_strategy_returns ──────────────────────────────────────────────────
 
 
-_WIDE_PARAMS = {"lookback_months": 60}  # wide window so fixture dates are always included
+_WIDE_PARAMS = {
+    "lookback_months": 60
+}  # wide window so fixture dates are always included
 
 
 class TestComputeStrategyReturns:
@@ -78,8 +77,10 @@ class TestComputeStrategyReturns:
         ohlcv_df = _make_ohlcv(periods=10)
         result = compute_strategy_returns(
             holdings_existing={"2024-01-01": lambda: holdings_df},
-            ohlcv_existing={"aapl": lambda: ohlcv_df[ohlcv_df["ticker"] == "AAPL"],
-                            "msft": lambda: ohlcv_df[ohlcv_df["ticker"] == "MSFT"]},
+            ohlcv_existing={
+                "aapl": lambda: ohlcv_df[ohlcv_df["ticker"] == "AAPL"],
+                "msft": lambda: ohlcv_df[ohlcv_df["ticker"] == "MSFT"],
+            },
             params=_WIDE_PARAMS,
         )
         assert "date" in result.columns
@@ -142,11 +143,20 @@ class TestComputeStrategyReturns:
 
 class TestComputePerformanceMetrics:
     def _flat_returns(self, n: int = 252, daily: float = 0.001) -> pd.DataFrame:
-        return pd.DataFrame({"date": pd.date_range("2024-01-01", periods=n), "portfolio_return": daily})
+        return pd.DataFrame(
+            {"date": pd.date_range("2024-01-01", periods=n), "portfolio_return": daily}
+        )
 
     def test_output_has_required_columns(self) -> None:
         result = compute_performance_metrics(self._flat_returns())
-        for col in ["cumulative_return", "annualised_return", "annualised_volatility", "sharpe_ratio", "max_drawdown", "observation_days"]:
+        for col in [
+            "cumulative_return",
+            "annualised_return",
+            "annualised_volatility",
+            "sharpe_ratio",
+            "max_drawdown",
+            "observation_days",
+        ]:
             assert col in result.columns
 
     def test_cumulative_return_positive_for_gains(self) -> None:
@@ -158,7 +168,9 @@ class TestComputePerformanceMetrics:
         assert result.iloc[0]["max_drawdown"] <= 0
 
     def test_empty_returns_gives_nan(self) -> None:
-        result = compute_performance_metrics(pd.DataFrame(columns=["date", "portfolio_return"]))
+        result = compute_performance_metrics(
+            pd.DataFrame(columns=["date", "portfolio_return"])
+        )
         assert math.isnan(result.iloc[0]["cumulative_return"])
 
     def test_observation_days_correct(self) -> None:
@@ -171,14 +183,18 @@ class TestComputePerformanceMetrics:
 
 class TestCompileReport:
     def _metrics(self) -> pd.DataFrame:
-        return pd.DataFrame([{
-            "cumulative_return": 0.12,
-            "annualised_return": 0.15,
-            "annualised_volatility": 0.10,
-            "sharpe_ratio": 1.5,
-            "max_drawdown": -0.05,
-            "observation_days": 252,
-        }])
+        return pd.DataFrame(
+            [
+                {
+                    "cumulative_return": 0.12,
+                    "annualised_return": 0.15,
+                    "annualised_volatility": 0.10,
+                    "sharpe_ratio": 1.5,
+                    "max_drawdown": -0.05,
+                    "observation_days": 252,
+                }
+            ]
+        )
 
     def test_one_strategy(self) -> None:
         result = compile_report(strategy_a=self._metrics())
@@ -196,15 +212,19 @@ class TestCompileReport:
 
 class TestSendPerformanceEmail:
     def _report(self) -> pd.DataFrame:
-        return pd.DataFrame([{
-            "strategy": "portfolio_construction",
-            "cumulative_return": 0.08,
-            "annualised_return": 0.10,
-            "annualised_volatility": 0.12,
-            "sharpe_ratio": 0.83,
-            "max_drawdown": -0.04,
-            "observation_days": 30,
-        }])
+        return pd.DataFrame(
+            [
+                {
+                    "strategy": "portfolio_construction",
+                    "cumulative_return": 0.08,
+                    "annualised_return": 0.10,
+                    "annualised_volatility": 0.12,
+                    "sharpe_ratio": 0.83,
+                    "max_drawdown": -0.04,
+                    "observation_days": 30,
+                }
+            ]
+        )
 
     def test_skips_send_with_missing_config(self) -> None:
         """No SMTP credentials → logs warning, does not raise."""
@@ -219,8 +239,10 @@ class TestSendPerformanceEmail:
             "smtp_pass": "secret",
         }
         mock_server = MagicMock()
-        with patch("smtplib.SMTP_SSL", return_value=mock_server.__enter__.return_value) as mock_ssl:
-            mock_ssl.return_value.__enter__ = lambda s: mock_server
+        with patch(
+            "smtplib.SMTP_SSL", return_value=mock_server.__enter__.return_value
+        ) as mock_ssl:
+            mock_ssl.return_value.__enter__ = lambda _s: mock_server
             mock_ssl.return_value.__exit__ = MagicMock(return_value=False)
             send_performance_email(self._report(), params=params)
 

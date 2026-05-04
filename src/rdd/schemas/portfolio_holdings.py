@@ -42,9 +42,11 @@ class PortfolioHoldingsSchema(DataFrameModel):
 
     @pa.dataframe_check(error="weights must sum to 1.0 (±0.01) per (strategy, date)")
     def weights_sum_to_one(cls, df: pd.DataFrame) -> bool:
+        """Return True if every (strategy, date) group sums to 1.0 ±0.01."""
         sums = df.groupby(["strategy", "date"])["weight"].sum()
         return bool((sums - 1.0).abs().le(0.01).all())
 
     @pa.dataframe_check(error="duplicate (strategy, date, ticker) rows found")
     def no_duplicate_positions(cls, df: pd.DataFrame) -> bool:
+        """Return True if there are no duplicate (strategy, date, ticker) rows."""
         return not df.duplicated(subset=["strategy", "date", "ticker"]).any()
