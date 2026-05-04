@@ -1,0 +1,11 @@
+portfolio_performance:
+  strategy_variants:
+    - claude_fundamental
+  benchmark_ticker: "SPY"
+  risk_free_rate: 0.0
+  # SMTP credentials fall back to RDD_* env vars if left blank here.
+  email_to: ""
+  smtp_host: ""
+  smtp_port: 465
+  smtp_user: ""
+  smtp_pass: ""

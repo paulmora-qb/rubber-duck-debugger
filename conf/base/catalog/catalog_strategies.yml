@@ -1,20 +1,48 @@
-# Intermediate signal dicts — in-memory only, not persisted between runs.
-momentum_signals:
-  type: MemoryDataset
-
-trend_signals:
-  type: MemoryDataset
-
-mean_reversion_signals:
-  type: MemoryDataset
-
-volatility_signals:
-  type: MemoryDataset
-
-# Final output: one JSON object per ticker, consumed by the agent debate system.
-stock_analyses:
-  type: kedro_datasets.json.JSONDataset
-  filepath: ${globals:data_dir}strategies/stock_analyses.json
+claude_fundamental.holdings:
+  type: kedro_datasets.partitions.PartitionedDataset
+  path: ${globals:data_dir}portfolio/holdings/claude_fundamental
+  dataset:
+    type: pandas.ParquetDataset
+  filename_suffix: ".parquet"
   metadata:
     kedro-viz:
-      layer: primary
+      layer: portfolio
+    pandera:
+      schema:
+        type: python.model
+        object_path: rdd.schemas.portfolio_holdings.PortfolioHoldingsSchema
+
+claude_fundamental.holdings_existing:
+  type: rdd.datasets.nullable_partitioned.NullablePartitionedDataset
+  path: ${globals:data_dir}portfolio/holdings/claude_fundamental
+  dataset:
+    type: pandas.ParquetDataset
+  filename_suffix: ".parquet"
+  metadata:
+    kedro-viz:
+      layer: portfolio
+
+portfolio_ticker_scores:
+  type: kedro_datasets.json.JSONDataset
+  filepath: "${globals:data_dir}portfolio/ticker_scores.json"
+
+portfolio_allocation:
+  type: kedro_datasets.json.JSONDataset
+  filepath: "${globals:data_dir}portfolio/allocation.json"
+
+# live_portfolio is maintained externally (updated after trades are executed).
+# Returns {} on first run so the pipeline treats it as no prior holdings.
+live_portfolio:
+  type: rdd.datasets.nullable_json.NullableJSONDataset
+  filepath: "${globals:data_dir}portfolio/live_portfolio.json"
+
+portfolio_trades:
+  type: kedro_datasets.json.JSONDataset
+  filepath: "${globals:data_dir}portfolio/trades.json"
+
+performance_report:
+  type: pandas.ParquetDataset
+  filepath: ${globals:data_dir}portfolio/performance/report.parquet
+  metadata:
+    kedro-viz:
+      layer: portfolio

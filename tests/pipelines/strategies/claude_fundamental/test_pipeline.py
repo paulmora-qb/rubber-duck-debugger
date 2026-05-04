@@ -9,7 +9,7 @@ import pytest
 from kedro.io import DataCatalog, MemoryDataset
 from kedro.runner import SequentialRunner
 
-from rdd.pipelines.portfolio_construction.pipeline import create_pipeline
+from rdd.pipelines.strategies.claude_fundamental.pipeline import create_pipeline
 
 
 @pytest.fixture(autouse=True)
@@ -25,6 +25,7 @@ def pipeline():
 @pytest.fixture
 def params() -> dict[str, Any]:
     return {
+        "strategy_name": "claude_fundamental",
         "model_screening": "claude-haiku-4-5-20251001",
         "model_selection": "claude-sonnet-4-6",
         "model_rebalancing": "claude-haiku-4-5-20251001",
@@ -75,7 +76,7 @@ def _mock_claude_responses(mocker) -> None:
     mock_client = mocker.MagicMock()
     mock_client.messages.create.side_effect = _side_effect
     mocker.patch(
-        "rdd.pipelines.portfolio_construction.nodes.anthropic.Anthropic",
+        "rdd.pipelines.strategies.claude_fundamental.nodes.anthropic.Anthropic",
         return_value=mock_client,
     )
 
@@ -100,7 +101,7 @@ def _make_catalog(params: dict) -> DataCatalog:
     )
     return DataCatalog(
         {
-            "raw_valuation_ratios": MemoryDataset(data={}),
+            "raw_valuation_ratios_existing": MemoryDataset(data={}),
             "raw_analyst_consensus": MemoryDataset(data={}),
             "raw_earnings_history": MemoryDataset(data={}),
             "raw_company_info": MemoryDataset(
@@ -109,14 +110,15 @@ def _make_catalog(params: dict) -> DataCatalog:
                     "msft": lambda: info_df[info_df["ticker"] == "MSFT"],
                 }
             ),
-            "raw_company_financials_quarterly": MemoryDataset(data={}),
+            "raw_company_financials_quarterly_existing": MemoryDataset(data={}),
             "stock_analyses": MemoryDataset(data={}),
             "raw_news_analysis_existing": MemoryDataset(data={}),
             "live_portfolio": MemoryDataset(data={}),
             "portfolio_ticker_scores": MemoryDataset(),
             "portfolio_allocation": MemoryDataset(),
             "portfolio_trades": MemoryDataset(),
-            "params:portfolio_construction": MemoryDataset(data=params),
+            "claude_fundamental.holdings": MemoryDataset(),
+            "params:claude_fundamental": MemoryDataset(data=params),
         }
     )
 
