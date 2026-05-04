@@ -558,7 +558,11 @@ def record_holdings(
         :class:`~rdd.schemas.portfolio_holdings.PortfolioHoldingsSchema`.
     """
     strategy = str(params["strategy_name"])
-    date = pd.Timestamp(portfolio_allocation.get("generated_at", pd.Timestamp.now("UTC"))).tz_localize(None).normalize()
+    date = (
+        pd.Timestamp(portfolio_allocation.get("generated_at", pd.Timestamp.now("UTC")))
+        .tz_localize(None)
+        .normalize()
+    )
     date_key = date.strftime("%Y-%m-%d")
 
     rows = [
