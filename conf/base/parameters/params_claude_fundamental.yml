@@ -1,4 +1,5 @@
-portfolio_construction:
+claude_fundamental:
+  strategy_name: "claude_fundamental"
   model_screening: "claude-haiku-4-5-20251001"
   model_selection: "claude-sonnet-4-6"
   model_rebalancing: "claude-haiku-4-5-20251001"

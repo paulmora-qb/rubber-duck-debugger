@@ -19,6 +19,8 @@ from typing import Any
 import anthropic
 import pandas as pd
 
+from rdd.schemas.portfolio_holdings import PortfolioHoldingsSchema
+
 logger = logging.getLogger(__name__)
 
 
@@ -144,9 +146,10 @@ def _build_ticker_brief(  # noqa: PLR0912
             upside = f"{(target / current - 1) * 100:.1f}%"
         else:
             upside = "n/a"
+        target_str = f"${target:.0f}" if pd.notna(target) else "n/a"
         parts.append(
             f"Analyst consensus: {row.get('recommendation_key', 'n/a')}"
-            f" | Mean target: ${target:.0f} | Upside: {upside}"
+            f" | Mean target: {target_str} | Upside: {upside}"
             f" | Analysts: {int(row.get('analyst_count', 0)) if pd.notna(row.get('analyst_count')) else 'n/a'}"
         )
 
@@ -534,3 +537,39 @@ def rebalance_portfolio(
         decision.get("estimated_turnover_pct", 0.0),
     )
     return decision
+
+
+def record_holdings(
+    portfolio_allocation: dict[str, Any],
+    params: dict[str, Any],
+) -> dict[str, pd.DataFrame]:
+    """Convert a portfolio allocation into a schema-validated holdings snapshot.
+
+    Emits a single date-keyed partition so the holdings history for this strategy
+    grows by one row-group per run without overwriting prior snapshots.
+
+    Args:
+        portfolio_allocation: Output of construct_portfolio.
+        params: ``portfolio_construction`` parameter block.  Must contain
+            ``strategy_name`` (str).
+
+    Returns:
+        Dict mapping ``YYYY-MM-DD`` → long-format DataFrame conforming to
+        :class:`~rdd.schemas.portfolio_holdings.PortfolioHoldingsSchema`.
+    """
+    strategy = str(params["strategy_name"])
+    date = pd.Timestamp(portfolio_allocation.get("generated_at", pd.Timestamp.now("UTC"))).tz_localize(None).normalize()
+    date_key = date.strftime("%Y-%m-%d")
+
+    rows = [
+        {
+            "strategy": strategy,
+            "date": date,
+            "ticker": h["ticker"].upper(),
+            "weight": float(h["weight"]),
+        }
+        for h in portfolio_allocation.get("holdings", [])
+    ]
+    df = PortfolioHoldingsSchema.validate(pd.DataFrame(rows))
+    logger.info("Recorded %d holdings for %s on %s.", len(df), strategy, date_key)
+    return {date_key: df}

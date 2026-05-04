@@ -27,10 +27,13 @@ from rdd.pipelines.feature_engineering.news_analysis.pipeline import (
     create_pipeline as news_analysis,
 )
 from rdd.pipelines.feature_engineering.strategies.pipeline import (
-    create_pipeline as strategies,
+    create_pipeline as signals,
 )
-from rdd.pipelines.portfolio_construction.pipeline import (
-    create_pipeline as portfolio_construction,
+from rdd.pipelines.strategies.claude_fundamental.pipeline import (
+    create_pipeline as claude_fundamental,
+)
+from rdd.pipelines.strategies.portfolio_performance.pipeline import (
+    create_pipeline as portfolio_performance,
 )
 
 
@@ -43,11 +46,12 @@ def register_pipelines() -> dict[str, Pipeline]:
     vr = valuation_ratios()
     ac = analyst_consensus()
     eh = earnings_history()
-    st = strategies()
+    sg = signals()
     na = news_analysis()
-    pc = portfolio_construction()
+    cf_strat = claude_fundamental()
+    pp = portfolio_performance(variants=["claude_fundamental"])
     return {
-        "__default__": sp + ci + cn + cf + vr + ac + eh + st + na + pc,
+        "__default__": sp + ci + cn + cf + vr + ac + eh + sg + na + cf_strat + pp,
         "stock_prices": sp,
         "company_info": ci,
         "company_news": cn,
@@ -55,7 +59,8 @@ def register_pipelines() -> dict[str, Pipeline]:
         "valuation_ratios": vr,
         "analyst_consensus": ac,
         "earnings_history": eh,
-        "strategies": st,
+        "signals": sg,
         "news_analysis": na,
-        "portfolio_construction": pc,
+        "claude_fundamental": cf_strat,
+        "portfolio_performance": pp,
     }

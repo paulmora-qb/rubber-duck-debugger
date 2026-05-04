@@ -1,3 +1,13 @@
+raw_valuation_ratios_existing:
+  type: rdd.datasets.nullable_partitioned.NullablePartitionedDataset
+  path: ${globals:data_dir}raw/valuation_ratios
+  dataset:
+    type: pandas.ParquetDataset
+  filename_suffix: ".parquet"
+  metadata:
+    kedro-viz:
+      layer: raw
+
 raw_valuation_ratios:
   type: kedro_datasets.partitions.PartitionedDataset
   path: ${globals:data_dir}raw/valuation_ratios
