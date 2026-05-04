@@ -2,9 +2,10 @@
 # Installs all RDD launchd agents. Idempotent — safe to run multiple times.
 #
 # Agents installed:
-#   com.rdd.daily-ingest      — Mon–Fri 10:00 local  (data ingestion)
-#   com.rdd.monthly-strategy  — 30th of each month 12:00 local  (claude_fundamental)
-#   com.rdd.weekly-performance — every Friday 12:00 local  (performance email)
+#   com.rdd.daily-ingest           — Mon–Fri 10:00 local  (data ingestion)
+#   com.rdd.weekly-performance     — every Friday 12:00 local  (performance email)
+#   com.rdd.monthly-strategy       — 1st of each month 12:00 local  (ai_fundamental_screen)
+#   com.rdd.monthly-news-analysis  — 26th of each month 12:00 local  (news analysis reports)
 
 set -euo pipefail
 
@@ -120,8 +121,39 @@ install_agent "com.rdd.weekly-performance" "$SCRIPT_DIR/run_weekly_performance.s
 </dict>
 </plist>"
 
+# ── 4. Monthly news analysis — 26th 12:00 ────────────────────────────────────
+
+install_agent "com.rdd.monthly-news-analysis" "$SCRIPT_DIR/run_monthly_news_analysis.sh" \
+"<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">
+<plist version=\"1.0\">
+<dict>
+    <key>Label</key><string>com.rdd.monthly-news-analysis</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>$SCRIPT_DIR/run_monthly_news_analysis.sh</string>
+    </array>
+    <!-- 26th of each month at 12:00 local -->
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Day</key><integer>26</integer>
+        <key>Hour</key><integer>12</integer>
+        <key>Minute</key><integer>0</integer>
+    </dict>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key><string>/Users/Paul_Mora/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+        <key>HOME</key><string>$HOME</string>
+    </dict>
+    <key>StandardOutPath</key><string>$LOG_DIR/monthly_news_analysis.log</string>
+    <key>StandardErrorPath</key><string>$LOG_DIR/monthly_news_analysis.log</string>
+</dict>
+</plist>"
+
 echo ""
 echo "All agents installed. Schedule summary:"
-echo "  Daily ingest    → Mon–Fri 10:00 local"
-echo "  Monthly strategy → 1st of each month 12:00 local"
-echo "  Weekly performance → every Friday 12:00 local"
+echo "  Daily ingest         → Mon–Fri 10:00 local"
+echo "  Monthly strategy     → 1st of each month 12:00 local"
+echo "  Weekly performance   → every Friday 12:00 local"
+echo "  Monthly news analysis → 26th of each month 12:00 local"
