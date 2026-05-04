@@ -26,8 +26,8 @@ main() {
 
   log "=== monthly strategy run start ==="
   git -C "$PROJECT_ROOT" fetch origin main >> "$LOG_FILE" 2>&1
-  git -C "$PROJECT_ROOT" checkout main >> "$LOG_FILE" 2>&1
-  git -C "$PROJECT_ROOT" pull --ff-only origin main >> "$LOG_FILE" 2>&1
+  git -C "$PROJECT_ROOT" checkout -f main >> "$LOG_FILE" 2>&1
+  git -C "$PROJECT_ROOT" reset --hard origin/main >> "$LOG_FILE" 2>&1
   log "[GIT] HEAD=$(git -C "$PROJECT_ROOT" rev-parse --short HEAD)"
 
   (cd "$PROJECT_ROOT" && uv run kedro run --pipeline ai_fundamental_screen) >> "$LOG_FILE" 2>&1
