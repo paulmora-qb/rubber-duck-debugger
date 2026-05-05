@@ -4,6 +4,17 @@ portfolio_performance:
   lookback_months: 3
   benchmark_ticker: "SPY"
   risk_free_rate: 0.0
+
+  # ── Broker / transaction costs ─────────────────────────────────────────────
+  # Interactive Brokers Pro Tiered pricing (https://www.interactivebrokers.com/en/pricing/commissions-stocks.php)
+  # $0.0035/share per side, minimum $0.35 per order.
+  # Applied to both legs (buy + sell) on each rebalance date.
+  # Assumed portfolio size is used to convert weight-based turnover to USD/shares.
+  broker_name: "Interactive Brokers (IBKR Pro Tiered)"
+  commission_per_share_usd: 0.0035
+  min_commission_per_order_usd: 0.35
+  assumed_portfolio_size_usd: 100000
+
   strategy_descriptions:
     ai_fundamental_screen: >
       Claude-powered fundamental screen of ~500 S&P 500 tickers. Each month,
@@ -13,6 +24,27 @@ portfolio_performance:
       concentrated 10-stock portfolio with conviction-weighted positions
       (5–20% per holding, max 35% per industry). Weights are rebalanced once
       per month on the 1st.
+    donchian_breakout: >
+      Price position within the 20-day Donchian channel. Score = (close -
+      20-day low) / (20-day high - low) - 0.5. Top 20% of universe by score,
+      positive scores only, equal-weighted. Monthly rebalance.
+    high_52w: >
+      Proximity to the 252-day rolling high. Score = close / 252-day max - 0.95.
+      Stocks within 5% of their annual high get positive scores. Top 20%,
+      equal-weighted. Monthly rebalance.
+    cross_sect_momentum: >
+      Cross-sectional 12-1 momentum (Jegadeesh & Titman). Score = price 21
+      trading days ago / price 252 trading days ago - 1. Skips the most recent
+      month to avoid short-term reversal. Top 20%, equal-weighted. Monthly rebalance.
+    obv_momentum: >
+      On-Balance Volume z-score. Score = (OBV - 21-day rolling mean) / std.
+      Positive z-score signals net buying pressure (accumulation). Top 20%,
+      equal-weighted. Monthly rebalance.
+    adx_trend: >
+      ADX directional trend strength. Score = ADX * sign(DI+ - DI-), filtered
+      to ADX > 25 (trending regime only). Positive scores indicate strong
+      upward trend. Top 20%, equal-weighted. Monthly rebalance.
+
   # SMTP credentials fall back to RDD_* env vars if left blank here.
   email_to: ""
   smtp_host: ""

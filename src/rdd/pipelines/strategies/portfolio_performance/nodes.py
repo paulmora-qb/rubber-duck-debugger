@@ -64,12 +64,91 @@ def _load_holdings(
 # ── node 1: compute_strategy_returns ─────────────────────────────────────────
 
 
+def _transaction_cost_fraction(
+    rebalance_dates: list,
+    holdings: pd.DataFrame,
+    prices: pd.DataFrame,
+    params: dict,
+) -> dict:
+    """Return a {rebalance_date: cost_fraction} dict for all rebalances.
+
+    Cost fraction = total_commissions / portfolio_size, ready to subtract from
+    the portfolio return on each rebalance day.
+
+    IBKR Pro Tiered model: max(min_commission, commission_per_share * shares)
+    applied once per position changed (buys AND sells are each one leg).
+    """
+    commission_per_share = float(params.get("commission_per_share_usd", 0.0))
+    min_commission = float(params.get("min_commission_per_order_usd", 0.0))
+    portfolio_size = float(params.get("assumed_portfolio_size_usd", 100_000.0))
+    broker_name = params.get("broker_name", "")
+
+    if commission_per_share <= 0 or portfolio_size <= 0:
+        return {}
+
+    if broker_name:
+        logger.info("Applying transaction costs: %s", broker_name)
+
+    prices_wide = prices.pivot_table(
+        index="date", columns="ticker", values="adj_close", aggfunc="last"
+    )
+
+    prev_weights: dict[str, float] = {}
+    cost_by_date: dict = {}
+
+    for rb_date in rebalance_dates:
+        rb_w = (
+            holdings[holdings["date"] == rb_date]
+            .set_index("ticker")["weight"]
+            .to_dict()
+        )
+        all_tickers = set(prev_weights) | set(rb_w)
+        total_cost = 0.0
+
+        for ticker in all_tickers:
+            delta = abs(rb_w.get(ticker, 0.0) - prev_weights.get(ticker, 0.0))
+            if delta < 1e-8:
+                continue
+
+            # Price on rebalance date, falling back to most-recent prior price.
+            price = float("nan")
+            if rb_date in prices_wide.index and ticker in prices_wide.columns:
+                price = float(prices_wide.at[rb_date, ticker])
+            if pd.isna(price):
+                avail = prices[
+                    (prices["ticker"] == ticker) & (prices["date"] <= rb_date)
+                ]
+                if not avail.empty:
+                    price = float(avail["adj_close"].iloc[-1])
+            if pd.isna(price) or price <= 0:
+                continue
+
+            shares = delta * portfolio_size / price
+            total_cost += max(min_commission, commission_per_share * shares)
+
+        cost_fraction = total_cost / portfolio_size
+        cost_by_date[rb_date] = cost_fraction
+        logger.debug(
+            "Rebalance %s: total_commission=%.2f  cost_fraction=%.6f",
+            rb_date.date(),
+            total_cost,
+            cost_fraction,
+        )
+        prev_weights = rb_w
+
+    return cost_by_date
+
+
 def compute_strategy_returns(
     holdings_existing: dict[str, Callable[[], pd.DataFrame]],
     ohlcv_existing: dict[str, Callable[[], pd.DataFrame]],
     params: dict | None = None,
 ) -> pd.DataFrame:
     """Compute daily portfolio returns using buy-and-hold between rebalances.
+
+    Transaction costs are deducted on each rebalance date using broker
+    parameters from ``params`` (``commission_per_share_usd``,
+    ``min_commission_per_order_usd``, ``assumed_portfolio_size_usd``).
 
     Args:
         holdings_existing: Date-partitioned holdings DataFrames for one strategy.
@@ -142,6 +221,15 @@ def compute_strategy_returns(
     returns_aligned = returns_wide[common_tickers].reindex(weights_aligned.index)
 
     portfolio_returns = (weights_aligned * returns_aligned).sum(axis=1).dropna()
+
+    # Deduct transaction costs on each rebalance date.
+    cost_by_date = _transaction_cost_fraction(
+        rebalance_dates, holdings, prices, params or {}
+    )
+    for rb_date, cost_frac in cost_by_date.items():
+        if rb_date in portfolio_returns.index:
+            portfolio_returns[rb_date] -= cost_frac
+
     result = portfolio_returns.reset_index()
     result.columns = ["date", "portfolio_return"]
     logger.info("Computed %d daily return observations.", len(result))

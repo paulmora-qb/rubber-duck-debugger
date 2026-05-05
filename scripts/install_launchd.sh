@@ -3,7 +3,7 @@
 #
 # Agents installed:
 #   com.rdd.daily-ingest           — Mon–Fri 10:00 local  (data ingestion)
-#   com.rdd.weekly-performance     — every Friday 12:00 local  (performance email)
+#   com.rdd.weekly-performance     — every Friday 12:00 local  (price_strategies rebalance + performance email)
 #   com.rdd.monthly-strategy       — 1st of each month 12:00 local  (ai_fundamental_screen)
 #   com.rdd.weekly-news-analysis   — every Friday 12:00 local  (news analysis reports)
 
@@ -155,5 +155,5 @@ echo ""
 echo "All agents installed. Schedule summary:"
 echo "  Daily ingest        → Mon–Fri 10:00 local"
 echo "  Monthly strategy    → 1st of each month 12:00 local"
-echo "  Weekly performance  → every Friday 12:00 local"
+echo "  Weekly performance  → every Friday 12:00 local (price_strategies rebalance + portfolio_performance)"
 echo "  Weekly news analysis → every Friday 12:00 local"
