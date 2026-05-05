@@ -7,7 +7,7 @@ unambiguous signal directions. Each test class covers one strategy:
   - insufficient data → no holdings produced
 
 The rebalance-date logic depends on today's date; tests use data that spans
-~620 business days from 2024-01-02, which covers the 3-month backfill window
+~620 business days from 2024-01-02, which covers the 12-week backfill window
 as of mid-2026.
 """
 
@@ -31,14 +31,14 @@ from tests.conftest import make_price_ohlcv
 # Constants
 # ---------------------------------------------------------------------------
 
-_N = 620  # ~620 business days covers the 3-month backfill window from 2024
+_N = 620  # ~620 business days covers the 12-week backfill window from 2024
 _START = "2024-01-02"
 
 _UPTREND = [100.0 + i * 0.5 for i in range(_N)]
 _DOWNTREND = [400.0 - i * 0.5 for i in range(_N)]
 
 _BASE_PARAMS: dict = {
-    "backfill_months": 3,
+    "backfill_weeks": 12,
     "top_pct": 1.0,  # take all positive-score tickers to simplify assertions
     "donchian": {"window": 20, "strategy_name": "donchian_breakout"},
     "high_52w": {

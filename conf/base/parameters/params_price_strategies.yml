@@ -1,7 +1,9 @@
 price_strategies:
   # ── Shared ─────────────────────────────────────────────────────────────────
-  # Number of monthly rebalance snapshots to backfill on each pipeline run.
-  backfill_months: 3
+  # Number of weekly rebalance snapshots to backfill on each pipeline run.
+  # 12 weeks ≈ 3 months of history. Each snapshot is keyed to the Monday of
+  # that week so holdings are always anchored to the start of the trading week.
+  backfill_weeks: 12
 
   # Fraction of the ticker universe to consider for each strategy (top N%).
   # Holdings are drawn from this pool, then filtered to positive-score tickers only.

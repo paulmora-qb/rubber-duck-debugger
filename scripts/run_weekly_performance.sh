@@ -47,6 +47,9 @@ main() {
   git -C "$PROJECT_ROOT" reset --hard origin/main >> "$LOG_FILE" 2>&1
   log "[GIT] HEAD=$(git -C "$PROJECT_ROOT" rev-parse --short HEAD)"
 
+  log "--- price_strategies ---"
+  (cd "$PROJECT_ROOT" && uv run kedro run --pipeline price_strategies) >> "$LOG_FILE" 2>&1
+  log "--- portfolio_performance ---"
   (cd "$PROJECT_ROOT" && uv run kedro run --pipeline portfolio_performance) >> "$LOG_FILE" 2>&1
   log "=== [DONE] ==="
 }

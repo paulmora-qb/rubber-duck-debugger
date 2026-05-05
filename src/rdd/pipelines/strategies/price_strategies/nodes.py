@@ -27,10 +27,11 @@ logger = logging.getLogger(__name__)
 
 
 def _rebalance_dates(params: dict[str, Any]) -> list[pd.Timestamp]:
-    """Return the last ``backfill_months`` first-business-day-of-month dates."""
-    backfill_months: int = int(params.get("backfill_months", 3))
+    """Return the last ``backfill_weeks`` Monday dates on or before today."""
+    backfill_weeks: int = int(params.get("backfill_weeks", 12))
     today = pd.Timestamp.now("UTC").normalize().tz_localize(None)
-    return list(pd.date_range(end=today, periods=backfill_months, freq="BMS"))
+    last_monday = today - pd.Timedelta(days=today.weekday())
+    return list(pd.date_range(end=last_monday, periods=backfill_weeks, freq="W-MON"))
 
 
 def _load_ticker_data(
