@@ -1,0 +1,47 @@
+price_strategies:
+  # ── Shared ─────────────────────────────────────────────────────────────────
+  # Number of monthly rebalance snapshots to backfill on each pipeline run.
+  backfill_months: 3
+
+  # Fraction of the ticker universe to consider for each strategy (top N%).
+  # Holdings are drawn from this pool, then filtered to positive-score tickers only.
+  top_pct: 0.20
+
+  # ── Donchian Channel Breakout ───────────────────────────────────────────────
+  # Score = (close - N-day low) / (N-day high - N-day low) - 0.5
+  # Positive = price in upper half of channel; negative = lower half.
+  donchian:
+    window: 20
+    strategy_name: "donchian_breakout"
+
+  # ── 52-Week High Proximity ──────────────────────────────────────────────────
+  # Score = close / rolling_max - proximity_threshold
+  # Positive = within threshold % of annual high; negative = further away.
+  high_52w:
+    window: 252
+    proximity_threshold: 0.95
+    strategy_name: "high_52w"
+
+  # ── Cross-sectional Momentum (12-1) ────────────────────────────────────────
+  # Score = close[t - skip] / close[t - lookback] - 1
+  # Skipping the last month avoids short-term reversal noise.
+  cross_sect_momentum:
+    lookback: 252
+    skip: 21
+    strategy_name: "cross_sect_momentum"
+
+  # ── OBV Momentum ───────────────────────────────────────────────────────────
+  # Score = z-score of OBV relative to its rolling mean over `window` days.
+  # Positive = OBV elevated above baseline (accumulation signal).
+  obv:
+    window: 21
+    strategy_name: "obv_momentum"
+
+  # ── ADX Trend Strength ──────────────────────────────────────────────────────
+  # Score = ADX × sign(DI+ - DI-)
+  # Positive = strong upward trend; negative = strong downward trend.
+  # Tickers with ADX below adx_threshold are excluded (non-trending / noisy).
+  adx:
+    window: 14
+    adx_threshold: 25.0
+    strategy_name: "adx_trend"

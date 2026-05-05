@@ -35,6 +35,17 @@ from rdd.pipelines.strategies.ai_fundamental_screen.pipeline import (
 from rdd.pipelines.strategies.portfolio_performance.pipeline import (
     create_pipeline as portfolio_performance,
 )
+from rdd.pipelines.strategies.price_strategies.pipeline import (
+    create_pipeline as price_strategies,
+)
+
+_PRICE_STRATEGY_VARIANTS = [
+    "donchian_breakout",
+    "high_52w",
+    "cross_sect_momentum",
+    "obv_momentum",
+    "adx_trend",
+]
 
 
 def register_pipelines() -> dict[str, Pipeline]:
@@ -49,9 +60,12 @@ def register_pipelines() -> dict[str, Pipeline]:
     sg = signals()
     na = news_analysis()
     afs = ai_fundamental_screen()
-    pp = portfolio_performance(variants=["ai_fundamental_screen"])
+    ps = price_strategies()
+    pp = portfolio_performance(
+        variants=["ai_fundamental_screen"] + _PRICE_STRATEGY_VARIANTS
+    )
     return {
-        "__default__": sp + ci + cn + cf + vr + ac + eh + sg + na + afs + pp,
+        "__default__": sp + ci + cn + cf + vr + ac + eh + sg + na + afs + ps + pp,
         "stock_prices": sp,
         "company_info": ci,
         "company_news": cn,
@@ -62,5 +76,6 @@ def register_pipelines() -> dict[str, Pipeline]:
         "signals": sg,
         "news_analysis": na,
         "ai_fundamental_screen": afs,
+        "price_strategies": ps,
         "portfolio_performance": pp,
     }
