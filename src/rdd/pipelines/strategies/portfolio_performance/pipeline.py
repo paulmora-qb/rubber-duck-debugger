@@ -1,9 +1,4 @@
-"""Portfolio performance pipeline — variant-per-strategy factory.
-
-Pattern mirrors CustomerOne: ``create_pipeline(variants)`` loops over strategy
-names and instantiates the same base pipeline under each namespace, then appends
-shared compile + email nodes that operate across all variants.
-"""
+"""Portfolio performance pipeline — variant-per-strategy factory."""
 
 from __future__ import annotations
 
@@ -11,6 +6,7 @@ from kedro.pipeline import Pipeline, node, pipeline
 
 from rdd.pipelines.strategies.portfolio_performance.nodes import (
     compile_report,
+    compute_benchmark_returns,
     compute_performance_metrics,
     compute_strategy_returns,
     send_performance_email,
@@ -51,8 +47,9 @@ def create_pipeline(variants: list[str] | None = None, **_kwargs) -> Pipeline:
             Defaults to ``["ai_fundamental_screen"]``.
 
     Returns:
-        Combined pipeline that computes per-strategy metrics then emails a
-        weekly report with cumulative-return chart, holdings breakdown, and KPIs.
+        Combined pipeline that computes per-strategy metrics, benchmark returns,
+        then emails a weekly report with cumulative-return chart, drawdown chart,
+        holdings breakdown, and KPI table.
     """
     if not variants:
         variants = ["ai_fundamental_screen"]
@@ -62,11 +59,11 @@ def create_pipeline(variants: list[str] | None = None, **_kwargs) -> Pipeline:
         Pipeline([]),
     )
 
-    # Pass per-strategy daily_returns and holdings_existing into the email node
-    # so it can render the chart and holdings breakdown.
     email_inputs: dict[str, str] = {
         "report": "performance_report",
         "params": "params:portfolio_performance",
+        "benchmark_returns": "benchmark_returns",
+        "company_info": "raw_company_info_existing",
     }
     for v in variants:
         email_inputs[f"{v}_returns"] = f"{v}.daily_returns"
@@ -74,6 +71,12 @@ def create_pipeline(variants: list[str] | None = None, **_kwargs) -> Pipeline:
 
     shared_nodes = Pipeline(
         [
+            node(
+                func=compute_benchmark_returns,
+                inputs=["raw_ohlcv_existing", "params:portfolio_performance"],
+                outputs="benchmark_returns",
+                name="compute_benchmark_returns",
+            ),
             node(
                 func=compile_report,
                 inputs={v: f"{v}.metrics" for v in variants},

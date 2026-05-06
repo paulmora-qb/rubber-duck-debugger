@@ -77,6 +77,9 @@ def fetch_ticker_universe(params: dict[str, Any]) -> list[str]:
         logger.info("NASDAQ 100: %d tickers", len(fetched))
         tickers.update(fetched)
 
+    for extra in params.get("extra_tickers", []):
+        tickers.add(_normalise_ticker(extra))
+
     result = sorted(tickers)
     logger.info("Total unique tickers in universe: %d", len(result))
     return result

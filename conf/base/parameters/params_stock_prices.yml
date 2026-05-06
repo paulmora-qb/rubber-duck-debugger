@@ -4,3 +4,6 @@ stock_prices:
   index_sources:
     sp500: true
     nasdaq100: true
+  # Extra tickers always fetched alongside the index universe (e.g. benchmarks).
+  extra_tickers:
+    - "SPY"
