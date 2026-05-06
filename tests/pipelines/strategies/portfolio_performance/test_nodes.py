@@ -247,7 +247,9 @@ class TestSendPerformanceEmail:
             send_performance_email(self._report(), params=params)
 
     def test_html_contains_strategy_name(self) -> None:
-        html = _build_html(self._report(), chart_b64="", holdings_html="")
+        html = _build_html(
+            self._report(), chart_b64="", drawdown_b64="", holdings_html=""
+        )
         # _fmt_strategy_name converts "portfolio_construction" → "Portfolio Construction"
         assert "Portfolio Construction" in html
         assert "<table" in html
