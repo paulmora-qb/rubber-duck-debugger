@@ -49,7 +49,16 @@ def register_pipelines() -> dict[str, Pipeline]:
     sg = signals()
     na = news_analysis()
     afs = ai_fundamental_screen()
-    pp = portfolio_performance(variants=["ai_fundamental_screen"])
+    pp = portfolio_performance(
+        variants=[
+            "ai_fundamental_screen",
+            "donchian_breakout",
+            "high_52w",
+            "cross_sect_momentum",
+            "obv_momentum",
+            "adx_trend",
+        ]
+    )
     return {
         "__default__": sp + ci + cn + cf + vr + ac + eh + sg + na + afs + pp,
         "stock_prices": sp,
