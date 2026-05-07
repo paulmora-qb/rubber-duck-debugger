@@ -146,6 +146,7 @@ main() {
   run_pipeline earnings_history
   backfill_news
   run_pipeline strategies
+  run_pipeline portfolio_performance
 
   if ! $DRY_RUN; then
     send_report
