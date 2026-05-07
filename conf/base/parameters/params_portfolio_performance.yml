@@ -4,15 +4,45 @@ portfolio_performance:
   lookback_months: 3
   benchmark_ticker: "SPY"
   risk_free_rate: 0.0
+  # Days between portfolio rebalances for each strategy.
+  # Used as a display label in the performance email.
+  strategy_rebalance_days:
+    ai_fundamental_screen: 30
+    donchian_breakout: 7
+    high_52w: 7
+    cross_sect_momentum: 7
+    obv_momentum: 7
+    adx_trend: 7
+
   strategy_descriptions:
     ai_fundamental_screen: >
-      Claude-powered fundamental screen of ~500 S&P 500 tickers. Each month,
-      Claude Haiku scores every ticker using valuation ratios (P/E, P/B,
-      EV/EBITDA), Wall Street analyst consensus, earnings history, quarterly
-      financials, and recent news sentiment. Claude Sonnet then selects a
-      concentrated 10-stock portfolio with conviction-weighted positions
-      (5–20% per holding, max 35% per industry). Weights are rebalanced once
-      per month on the 1st.
+      Claude-powered fundamental screen of ~500 S&P 500 tickers. Claude Haiku
+      scores every ticker using valuation ratios (P/E, P/B, EV/EBITDA), Wall
+      Street analyst consensus, earnings history, quarterly financials, and
+      recent news sentiment. Claude Sonnet then selects a concentrated
+      10-stock portfolio with conviction-weighted positions (5–20% per
+      holding, max 35% per industry).
+    donchian_breakout: >
+      Equal-weighted basket of the top 20% of S&P 500 + NASDAQ 100 tickers
+      ranked by Donchian channel position score: (close - N-day low) /
+      (N-day high - N-day low) - 0.5. Positive scores indicate price is in
+      the upper half of its recent trading range.
+    high_52w: >
+      Equal-weighted basket of tickers trading within 5% of their 52-week
+      high. Captures price momentum and strength relative to recent annual
+      range.
+    cross_sect_momentum: >
+      Equal-weighted basket ranked by 12-1 month momentum (12-month return
+      skipping the last month to avoid short-term reversal). Targets
+      sustained cross-sectional outperformers.
+    obv_momentum: >
+      Equal-weighted basket ranked by On-Balance Volume z-score over a
+      21-day window. Elevated OBV signals institutional accumulation ahead
+      of price moves.
+    adx_trend: >
+      Equal-weighted basket of strong-trending tickers (ADX > 25) with
+      positive directional bias (DI+ > DI-). Avoids choppy, non-trending
+      markets.
   # SMTP credentials fall back to RDD_* env vars if left blank here.
   email_to: ""
   smtp_host: ""
