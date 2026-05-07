@@ -1,0 +1,156 @@
+strategy_signals:
+  type: MemoryDataset
+
+backtest_equity_curve:
+  type: pandas.CSVDataset
+  filepath: ${globals:data_dir}backtest/equity_curve.csv
+  versioned: true
+  metadata:
+    kedro-viz:
+      layer: reporting
+
+backtest_trades:
+  type: pandas.CSVDataset
+  filepath: ${globals:data_dir}backtest/trades.csv
+  versioned: true
+  metadata:
+    kedro-viz:
+      layer: reporting
+
+backtest_positions:
+  type: pandas.ParquetDataset
+  filepath: ${globals:data_dir}backtest/positions.parquet
+  versioned: true
+  metadata:
+    kedro-viz:
+      layer: reporting
+
+# ── Price strategy backtest outputs ──────────────────────────────────────────
+
+backtest_comparison:
+  type: pandas.CSVDataset
+  filepath: ${globals:data_dir}backtest/comparison.csv
+  versioned: true
+  metadata:
+    kedro-viz:
+      layer: reporting
+
+donchian_breakout.backtest_equity_curve:
+  type: pandas.CSVDataset
+  filepath: ${globals:data_dir}backtest/donchian_breakout/equity_curve.csv
+  versioned: true
+  metadata:
+    kedro-viz:
+      layer: reporting
+
+donchian_breakout.backtest_trades:
+  type: pandas.CSVDataset
+  filepath: ${globals:data_dir}backtest/donchian_breakout/trades.csv
+  versioned: true
+  metadata:
+    kedro-viz:
+      layer: reporting
+
+donchian_breakout.backtest_positions:
+  type: pandas.ParquetDataset
+  filepath: ${globals:data_dir}backtest/donchian_breakout/positions.parquet
+  versioned: true
+  metadata:
+    kedro-viz:
+      layer: reporting
+
+high_52w.backtest_equity_curve:
+  type: pandas.CSVDataset
+  filepath: ${globals:data_dir}backtest/high_52w/equity_curve.csv
+  versioned: true
+  metadata:
+    kedro-viz:
+      layer: reporting
+
+high_52w.backtest_trades:
+  type: pandas.CSVDataset
+  filepath: ${globals:data_dir}backtest/high_52w/trades.csv
+  versioned: true
+  metadata:
+    kedro-viz:
+      layer: reporting
+
+high_52w.backtest_positions:
+  type: pandas.ParquetDataset
+  filepath: ${globals:data_dir}backtest/high_52w/positions.parquet
+  versioned: true
+  metadata:
+    kedro-viz:
+      layer: reporting
+
+cross_sect_momentum.backtest_equity_curve:
+  type: pandas.CSVDataset
+  filepath: ${globals:data_dir}backtest/cross_sect_momentum/equity_curve.csv
+  versioned: true
+  metadata:
+    kedro-viz:
+      layer: reporting
+
+cross_sect_momentum.backtest_trades:
+  type: pandas.CSVDataset
+  filepath: ${globals:data_dir}backtest/cross_sect_momentum/trades.csv
+  versioned: true
+  metadata:
+    kedro-viz:
+      layer: reporting
+
+cross_sect_momentum.backtest_positions:
+  type: pandas.ParquetDataset
+  filepath: ${globals:data_dir}backtest/cross_sect_momentum/positions.parquet
+  versioned: true
+  metadata:
+    kedro-viz:
+      layer: reporting
+
+obv_momentum.backtest_equity_curve:
+  type: pandas.CSVDataset
+  filepath: ${globals:data_dir}backtest/obv_momentum/equity_curve.csv
+  versioned: true
+  metadata:
+    kedro-viz:
+      layer: reporting
+
+obv_momentum.backtest_trades:
+  type: pandas.CSVDataset
+  filepath: ${globals:data_dir}backtest/obv_momentum/trades.csv
+  versioned: true
+  metadata:
+    kedro-viz:
+      layer: reporting
+
+obv_momentum.backtest_positions:
+  type: pandas.ParquetDataset
+  filepath: ${globals:data_dir}backtest/obv_momentum/positions.parquet
+  versioned: true
+  metadata:
+    kedro-viz:
+      layer: reporting
+
+adx_trend.backtest_equity_curve:
+  type: pandas.CSVDataset
+  filepath: ${globals:data_dir}backtest/adx_trend/equity_curve.csv
+  versioned: true
+  metadata:
+    kedro-viz:
+      layer: reporting
+
+adx_trend.backtest_trades:
+  type: pandas.CSVDataset
+  filepath: ${globals:data_dir}backtest/adx_trend/trades.csv
+  versioned: true
+  metadata:
+    kedro-viz:
+      layer: reporting
+
+adx_trend.backtest_positions:
+  type: pandas.ParquetDataset
+  filepath: ${globals:data_dir}backtest/adx_trend/positions.parquet
+  versioned: true
+  metadata:
+    kedro-viz:
+      layer: reporting

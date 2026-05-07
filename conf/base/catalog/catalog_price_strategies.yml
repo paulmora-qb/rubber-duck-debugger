@@ -1,0 +1,129 @@
+# ── Donchian Breakout ─────────────────────────────────────────────────────────
+
+donchian_breakout.holdings:
+  type: kedro_datasets.partitions.PartitionedDataset
+  path: ${globals:data_dir}portfolio/holdings/donchian_breakout
+  dataset:
+    type: pandas.ParquetDataset
+  filename_suffix: ".parquet"
+  metadata:
+    kedro-viz:
+      layer: portfolio
+    pandera:
+      schema:
+        type: python.model
+        object_path: rdd.schemas.portfolio_holdings.PortfolioHoldingsSchema
+
+donchian_breakout.holdings_existing:
+  type: rdd.datasets.nullable_partitioned.NullablePartitionedDataset
+  path: ${globals:data_dir}portfolio/holdings/donchian_breakout
+  dataset:
+    type: pandas.ParquetDataset
+  filename_suffix: ".parquet"
+  metadata:
+    kedro-viz:
+      layer: portfolio
+
+# ── 52-Week High Proximity ────────────────────────────────────────────────────
+
+high_52w.holdings:
+  type: kedro_datasets.partitions.PartitionedDataset
+  path: ${globals:data_dir}portfolio/holdings/high_52w
+  dataset:
+    type: pandas.ParquetDataset
+  filename_suffix: ".parquet"
+  metadata:
+    kedro-viz:
+      layer: portfolio
+    pandera:
+      schema:
+        type: python.model
+        object_path: rdd.schemas.portfolio_holdings.PortfolioHoldingsSchema
+
+high_52w.holdings_existing:
+  type: rdd.datasets.nullable_partitioned.NullablePartitionedDataset
+  path: ${globals:data_dir}portfolio/holdings/high_52w
+  dataset:
+    type: pandas.ParquetDataset
+  filename_suffix: ".parquet"
+  metadata:
+    kedro-viz:
+      layer: portfolio
+
+# ── Cross-sectional Momentum ──────────────────────────────────────────────────
+
+cross_sect_momentum.holdings:
+  type: kedro_datasets.partitions.PartitionedDataset
+  path: ${globals:data_dir}portfolio/holdings/cross_sect_momentum
+  dataset:
+    type: pandas.ParquetDataset
+  filename_suffix: ".parquet"
+  metadata:
+    kedro-viz:
+      layer: portfolio
+    pandera:
+      schema:
+        type: python.model
+        object_path: rdd.schemas.portfolio_holdings.PortfolioHoldingsSchema
+
+cross_sect_momentum.holdings_existing:
+  type: rdd.datasets.nullable_partitioned.NullablePartitionedDataset
+  path: ${globals:data_dir}portfolio/holdings/cross_sect_momentum
+  dataset:
+    type: pandas.ParquetDataset
+  filename_suffix: ".parquet"
+  metadata:
+    kedro-viz:
+      layer: portfolio
+
+# ── OBV Momentum ──────────────────────────────────────────────────────────────
+
+obv_momentum.holdings:
+  type: kedro_datasets.partitions.PartitionedDataset
+  path: ${globals:data_dir}portfolio/holdings/obv_momentum
+  dataset:
+    type: pandas.ParquetDataset
+  filename_suffix: ".parquet"
+  metadata:
+    kedro-viz:
+      layer: portfolio
+    pandera:
+      schema:
+        type: python.model
+        object_path: rdd.schemas.portfolio_holdings.PortfolioHoldingsSchema
+
+obv_momentum.holdings_existing:
+  type: rdd.datasets.nullable_partitioned.NullablePartitionedDataset
+  path: ${globals:data_dir}portfolio/holdings/obv_momentum
+  dataset:
+    type: pandas.ParquetDataset
+  filename_suffix: ".parquet"
+  metadata:
+    kedro-viz:
+      layer: portfolio
+
+# ── ADX Trend Strength ────────────────────────────────────────────────────────
+
+adx_trend.holdings:
+  type: kedro_datasets.partitions.PartitionedDataset
+  path: ${globals:data_dir}portfolio/holdings/adx_trend
+  dataset:
+    type: pandas.ParquetDataset
+  filename_suffix: ".parquet"
+  metadata:
+    kedro-viz:
+      layer: portfolio
+    pandera:
+      schema:
+        type: python.model
+        object_path: rdd.schemas.portfolio_holdings.PortfolioHoldingsSchema
+
+adx_trend.holdings_existing:
+  type: rdd.datasets.nullable_partitioned.NullablePartitionedDataset
+  path: ${globals:data_dir}portfolio/holdings/adx_trend
+  dataset:
+    type: pandas.ParquetDataset
+  filename_suffix: ".parquet"
+  metadata:
+    kedro-viz:
+      layer: portfolio

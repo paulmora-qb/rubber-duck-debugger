@@ -2,6 +2,9 @@
 
 from kedro.pipeline import Pipeline
 
+from rdd.pipelines.backtest.pipeline import (
+    create_price_strategies_pipeline as backtest_price_strategies,
+)
 from rdd.pipelines.data_ingestion.analyst_consensus.pipeline import (
     create_pipeline as analyst_consensus,
 )
@@ -35,6 +38,9 @@ from rdd.pipelines.strategies.ai_fundamental_screen.pipeline import (
 from rdd.pipelines.strategies.portfolio_performance.pipeline import (
     create_pipeline as portfolio_performance,
 )
+from rdd.pipelines.strategies.price_strategies.pipeline import (
+    create_pipeline as price_strategies,
+)
 
 
 def register_pipelines() -> dict[str, Pipeline]:
@@ -49,6 +55,8 @@ def register_pipelines() -> dict[str, Pipeline]:
     sg = signals()
     na = news_analysis()
     afs = ai_fundamental_screen()
+    ps = price_strategies()
+    bps = backtest_price_strategies()
     pp = portfolio_performance(
         variants=[
             "ai_fundamental_screen",
@@ -71,5 +79,7 @@ def register_pipelines() -> dict[str, Pipeline]:
         "signals": sg,
         "news_analysis": na,
         "ai_fundamental_screen": afs,
+        "price_strategies": ps,
+        "backtest_price_strategies": bps,
         "portfolio_performance": pp,
     }
