@@ -704,11 +704,22 @@ def _kpi_table_html(
     )
 
 
-def _descriptions_html(strategy_descriptions: dict[str, str]) -> str:
+def _descriptions_html(
+    strategy_descriptions: dict[str, str],
+    rebalance_days: dict[str, int] | None = None,
+) -> str:
     if not strategy_descriptions:
         return ""
+    rd = rebalance_days or {}
     items = "".join(
-        f"<dt style='font-weight:bold;margin-top:12px'>{_fmt_strategy_name(name)}</dt>"
+        f"<dt style='font-weight:bold;margin-top:12px'>{_fmt_strategy_name(name)}"
+        + (
+            f"<span style='font-weight:normal;font-size:11px;color:#888;"
+            f"margin-left:8px'>rebalances every {rd[name]} day{'s' if rd[name] != 1 else ''}</span>"
+            if name in rd
+            else ""
+        )
+        + "</dt>"
         f"<dd style='margin:4px 0 0 16px;color:#444'>{desc.strip()}</dd>"
         for name, desc in strategy_descriptions.items()
     )
@@ -735,8 +746,9 @@ def _build_html(
     strategy_descriptions: dict[str, str] | None = None,
     benchmark_cumulative: float | None = None,
     benchmark_label: str = "SPY",
+    rebalance_days: dict[str, int] | None = None,
 ) -> str:
-    desc_html = _descriptions_html(strategy_descriptions or {})
+    desc_html = _descriptions_html(strategy_descriptions or {}, rebalance_days)
     return f"""
 <html>
 <head><meta charset="UTF-8"/></head>
@@ -881,6 +893,7 @@ def send_performance_email(
 
     holdings_html = _holdings_table_html(holdings_by_strategy, ticker_sector)
     strategy_descriptions: dict[str, str] = params.get("strategy_descriptions", {})
+    strategy_rebalance_days: dict[str, int] = params.get("strategy_rebalance_days", {})
 
     html = _build_html(
         report,
@@ -890,10 +903,13 @@ def send_performance_email(
         strategy_descriptions,
         benchmark_cumulative,
         benchmark_label,
+        strategy_rebalance_days,
     )
 
     msg = MIMEMultipart("alternative")
-    msg["Subject"] = "RDD Weekly Portfolio Performance"
+    msg["Subject"] = (
+        f"RDD Portfolio Performance — {pd.Timestamp.now().strftime('%Y-%m-%d')}"
+    )
     msg["From"] = smtp_user
     msg["To"] = to_addr
     msg.attach(MIMEText(html, "html", "utf-8"))
