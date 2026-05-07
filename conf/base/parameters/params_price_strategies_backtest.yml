@@ -1,0 +1,26 @@
+price_strategies_backtest:
+  start_date: "2023-01-01"  # full OHLCV history from ingestion start
+  top_pct: 0.20
+
+  donchian:
+    window: 20
+    strategy_name: "donchian_breakout"
+
+  high_52w:
+    window: 252
+    proximity_threshold: 0.95
+    strategy_name: "high_52w"
+
+  cross_sect_momentum:
+    lookback: 252
+    skip: 21
+    strategy_name: "cross_sect_momentum"
+
+  obv:
+    window: 21
+    strategy_name: "obv_momentum"
+
+  adx:
+    window: 14
+    adx_threshold: 25.0
+    strategy_name: "adx_trend"
